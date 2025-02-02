@@ -1,0 +1,31 @@
+<idea-plugin>
+  <id>com.saturnribbon.multifilecopyplugin</id>
+  <name>MultiFileCopyPlugin</name>
+
+  <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+  <vendor email="multifile@saturnribbon.com" url="https://saturnribbon.com">Saturn Ribbon</vendor>
+
+  <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+       Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
+       Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
+  <description>
+    Allows selecting multiple files in the Project view and copies their contents to the clipboard.
+  </description>
+
+  <depends>com.intellij.modules.platform</depends>
+  <depends>com.intellij.modules.vcs</depends>
+  <extensions defaultExtensionNs="com.intellij">
+
+  </extensions>
+  <!-- Define an action -->
+  <actions>
+    <action id="CopyMultipleFilesContent"
+            class="com.saturnribbon.multifilecopyplugin.CopyMultipleFilesAction"
+            text="Copy Multiple Files to Clipboard"
+            description="Copies the contents of selected files to the clipboard">
+      <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="CopyReference"/>
+      <add-to-group group-id="ProjectViewPopupMenuModifyGroup" anchor="after" relative-to-action="CopyReference"/>
+      <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl alt C"/>
+    </action>
+  </actions>
+</idea-plugin>
