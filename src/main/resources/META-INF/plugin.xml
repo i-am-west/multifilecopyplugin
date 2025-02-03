@@ -14,8 +14,11 @@
 
   <depends>com.intellij.modules.platform</depends>
   <depends>com.intellij.modules.vcs</depends>
+  <resource-bundle>messages</resource-bundle>
   <extensions defaultExtensionNs="com.intellij">
-
+    <notificationGroup id="FileProcessingUtil"
+                       displayType="BALLOON"
+                       key="notification.group.name"/>
   </extensions>
   <!-- Define an action -->
   <actions>

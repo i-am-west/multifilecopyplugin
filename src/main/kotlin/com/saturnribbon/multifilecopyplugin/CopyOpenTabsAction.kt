@@ -1,12 +1,20 @@
 package com.saturnribbon.multifilecopyplugin
 
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.saturnribbon.multifilecopyplugin.util.FileContentUtils
 import com.saturnribbon.multifilecopyplugin.util.FileProcessingUtil
 
-class CopyOpenTabsAction : AnAction("Copy Open Tabs to Clipboard") {
+class CopyOpenTabsAction : AnAction() {
+    init {
+        templatePresentation.text = "Copy Open Tabs to Clipboard"
+    }
+
+    override fun getActionUpdateThread(): ActionUpdateThread {
+        return ActionUpdateThread.EDT
+    }
 
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
@@ -17,7 +25,6 @@ class CopyOpenTabsAction : AnAction("Copy Open Tabs to Clipboard") {
     }
 
     override fun update(e: AnActionEvent) {
-        // Enable the action only if we have a project and there are open files
         val project = e.project
         e.presentation.isEnabled = project != null &&
             FileEditorManager.getInstance(project).openFiles.isNotEmpty()

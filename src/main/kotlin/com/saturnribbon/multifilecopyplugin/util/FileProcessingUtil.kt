@@ -100,7 +100,7 @@ object FileProcessingUtil {
     private fun notifyError(project: Project, file: VirtualFile, ex: Exception) {
         Notifications.Bus.notify(
             Notification(
-                "com.saturnribbon",
+                "FileProcessingUtil",
                 "Error",
                 "Failed to process ${file.path}: ${ex.message}",
                 NotificationType.ERROR
