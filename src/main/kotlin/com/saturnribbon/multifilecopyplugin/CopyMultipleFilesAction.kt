@@ -142,7 +142,8 @@ class CopyMultipleFilesAction : AnAction("Copy Multiple Files to Clipboard") {
     }
 
     override fun update(e: AnActionEvent) {
-        val selectedFiles: Array<VirtualFile>? = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY)
-        e.presentation.isEnabled = !selectedFiles.isNullOrEmpty()
+//        val selectedFiles: Array<VirtualFile>? = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY)
+//        e.presentation.isEnabled = !selectedFiles.isNullOrEmpty()
+        e.presentation.isEnabled = true
     }
 }
