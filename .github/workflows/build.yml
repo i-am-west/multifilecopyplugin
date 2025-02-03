@@ -32,5 +32,6 @@ jobs:
     - name: Upload Plugin Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: plugin-distribution
+        name: multi-file-copy
         path: build/distributions/*.zip
+        compression-level: 0
