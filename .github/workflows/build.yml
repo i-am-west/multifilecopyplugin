@@ -38,10 +38,15 @@ jobs:
         DIST_ZIP=$(ls *.zip)
         # Extract into publish directory
         unzip "$DIST_ZIP" -d publish
+    - name: Get Version
+      id: get_version
+      run: |
+        VERSION=$(grep 'version =' build.gradle.kts | awk -F'"' '{print $2}')
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
     - name: Upload Plugin Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: multi-file-copy
+        name: multi-file-copy-${{ steps.get_version.outputs.version }}-${{ github.run_id }
         path: build/distributions/publish/*
         compression-level: 0
 
