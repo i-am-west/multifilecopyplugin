@@ -1,4 +1,4 @@
-# MultiFileCopyPlugin
+# Multi-File Copy Plugin
 
 An IntelliJ IDEA plugin to select multiple files and copy their contents to the clipboard.
 
@@ -9,7 +9,7 @@ An IntelliJ IDEA plugin to select multiple files and copy their contents to the 
 
 ## Installation
 
-1. Download the plugin JAR from [your repository].
+1. Download the plugin ZIP from releases or build artifacts
 2. In IntelliJ IDEA, go to **File > Settings > Plugins**.
 3. Click **Install from Disk...** and select the JAR file.
 4. Restart IntelliJ IDEA.
