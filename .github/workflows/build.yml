@@ -29,9 +29,16 @@ jobs:
       run: ./gradlew test
     - name: Build Plugin JAR
       run: ./gradlew buildPlugin
+    - name: Extract Plugin Zip
+      run: |
+        VERSION=$(./gradlew properties | grep "version:" | cut -d' ' -f2)
+        cd build/distributions
+        unzip *.zip
+        PLUGIN_ZIP=$(find . -maxdepth 1 -name "multifilecopyplugin-*.zip" -printf "%f\n")
+        mv "$PLUGIN_ZIP" "../multi-file-copy-${VERSION}.zip"
     - name: Upload Plugin Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: multi-file-copy
-        path: build/distributions/*.zip
+        name: plugin
+        path: build/multi-file-copy-*.zip
         compression-level: 0
