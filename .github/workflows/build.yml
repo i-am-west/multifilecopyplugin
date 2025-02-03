@@ -32,15 +32,16 @@ jobs:
     - name: Process Plugin Zip
       run: |
         cd build/distributions
+        # Create publish directory
+        mkdir publish
         # Get the name of the outer zip file
         DIST_ZIP=$(ls *.zip)
-        # Extract just the plugin zip file without creating a directory
-        unzip -j "$DIST_ZIP"
-        # Remove the original distribution zip
-        rm "$DIST_ZIP"
+        # Extract into publish directory
+        unzip "$DIST_ZIP" -d publish
     - name: Upload Plugin Artifact
       uses: actions/upload-artifact@v4
       with:
         name: multi-file-copy
-        path: build/distributions/*.zip
+        path: build/distributions/publish/*
         compression-level: 0
+
