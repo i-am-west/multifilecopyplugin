@@ -46,7 +46,7 @@ jobs:
     - name: Upload Plugin Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: multi-file-copy-${{ steps.get_version.outputs.version }}-${{ github.run_id }
+        name: multi-file-copy-${{ steps.get_version.outputs.version }}-${{ github.run_id }}
         path: build/distributions/publish/*
         compression-level: 0
 
