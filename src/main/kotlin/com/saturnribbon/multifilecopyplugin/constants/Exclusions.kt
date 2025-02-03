@@ -1,4 +1,4 @@
-package com.saturnribbon.multifilecopyplugin
+package com.saturnribbon.multifilecopyplugin.constants
 
 object Exclusions {
     val EXCLUDED_DIRECTORIES = setOf(

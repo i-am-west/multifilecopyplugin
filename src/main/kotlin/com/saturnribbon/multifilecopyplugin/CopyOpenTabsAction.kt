@@ -1,9 +1,11 @@
 package com.saturnribbon.multifilecopyplugin
 
+import com.intellij.configurationStore.getFileRelativeToRootConfig
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.ide.CopyPasteManager
+import com.saturnribbon.multifilecopyplugin.util.FileContentUtils
 import java.awt.datatransfer.StringSelection
 
 class CopyOpenTabsAction : AnAction("Copy Open Tabs to Clipboard") {
@@ -18,17 +20,13 @@ class CopyOpenTabsAction : AnAction("Copy Open Tabs to Clipboard") {
 
         for (file in openFiles) {
             try {
-                val fileContent = String(file.contentsToByteArray(), file.charset)
-                combinedContent.append("----- ${file.path} -----\n")
-                combinedContent.append(fileContent).append("\n\n")
+                combinedContent.append(FileContentUtils.fileToString(file))
             } catch (ex: Exception) {
                 // Handle error if needed
             }
         }
 
-        // Copy to clipboard
-        val stringSelection = StringSelection(combinedContent.toString())
-        CopyPasteManager.getInstance().setContents(stringSelection)
+        FileContentUtils.copyToClipboard(combinedContent.toString())
     }
 
     override fun update(e: AnActionEvent) {

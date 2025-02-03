@@ -6,12 +6,12 @@ import com.intellij.notification.Notifications
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vcs.FileStatus
 import com.intellij.openapi.vcs.FileStatusManager
 import com.intellij.openapi.vfs.VirtualFile
-import java.awt.datatransfer.StringSelection
+import com.saturnribbon.multifilecopyplugin.constants.Exclusions
+import com.saturnribbon.multifilecopyplugin.util.FileContentUtils
 
 class CopySelectedFilesAction : AnAction("Copy Multiple Files to Clipboard") {
 
@@ -30,9 +30,7 @@ class CopySelectedFilesAction : AnAction("Copy Multiple Files to Clipboard") {
         val processedFiles = mutableSetOf<VirtualFile>()
 
         processFiles(selectedFiles, combinedContent, project, directlySelectedFiles, processedFiles)
-        // Copy to clipboard
-        val stringSelection = StringSelection(combinedContent.toString())
-        CopyPasteManager.getInstance().setContents(stringSelection)
+        FileContentUtils.copyToClipboard(combinedContent.toString())
     }
 
     private fun processFiles(
@@ -56,9 +54,7 @@ class CopySelectedFilesAction : AnAction("Copy Multiple Files to Clipboard") {
                     // Check if file is directly selected or not ignored
                     if (!processedFiles.contains(file) && shouldProcessFile(file, directlySelectedFiles, project)) {
                         try {
-                            val fileContent = String(file.contentsToByteArray(), file.charset)
-                            content.append("----- ${file.path} -----\n")
-                            content.append(fileContent).append("\n\n")
+                            content.append(FileContentUtils.fileToString(file))
                             processedFiles.add(file)
                         } catch (ex: Exception) {
                             ex.printStackTrace()
