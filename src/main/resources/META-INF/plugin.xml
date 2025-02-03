@@ -20,12 +20,21 @@
   <!-- Define an action -->
   <actions>
     <action id="CopyMultipleFilesContent"
-            class="com.saturnribbon.multifilecopyplugin.CopyMultipleFilesAction"
+            class="com.saturnribbon.multifilecopyplugin.CopySelectedFilesAction"
             text="Copy Multiple Files to Clipboard"
             description="Copies the contents of selected files to the clipboard">
       <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="CopyReference"/>
       <add-to-group group-id="ProjectViewPopupMenuModifyGroup" anchor="after" relative-to-action="CopyReference"/>
       <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl alt C"/>
     </action>
+    <action id="CopyOpenTabsContent"
+        class="com.saturnribbon.multifilecopyplugin.CopyOpenTabsAction"
+        text="Copy Open Tabs to Clipboard"
+        description="Copies the contents of all open editor tabs to the clipboard">
+    <add-to-group group-id="EditMenu" anchor="after" relative-to-action="CopyReference"/>
+      <add-to-group group-id="EditorTabPopupMenu" anchor="after" relative-to-action="CopyReference"/>
+    <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl T"/>
+</action>
+
   </actions>
 </idea-plugin>

@@ -1,5 +1,8 @@
 package com.saturnribbon.multifilecopyplugin
 
+import com.intellij.notification.Notification
+import com.intellij.notification.NotificationType
+import com.intellij.notification.Notifications
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
@@ -10,32 +13,7 @@ import com.intellij.openapi.vcs.FileStatusManager
 import com.intellij.openapi.vfs.VirtualFile
 import java.awt.datatransfer.StringSelection
 
-class CopyMultipleFilesAction : AnAction("Copy Multiple Files to Clipboard") {
-    private val excludedDirectories = setOf(
-        "build", "bin", "out", "target", "node_modules"
-    )
-
-    private val excludedFiles = setOf(
-        "package-lock.json",
-        "yarn.lock",
-        "pom.xml",
-        "build.gradle",
-        "settings.gradle",
-        "gradlew",
-        "gradlew.properties",
-        ".gitignore",
-        "gradlew.bat"
-    )
-
-    private val binaryExtensions = setOf(
-        "exe", "dll", "so", "dylib", "bin", "jar", "war",
-        "class", "o", "obj", "zip", "tar", "gz", "7z", "rar"
-    )
-
-    private val imageExtensions = setOf(
-        "png", "jpg", "jpeg", "gif", "bmp", "ico", "svg",
-        "webp", "tiff", "psd"
-    )
+class CopySelectedFilesAction : AnAction("Copy Multiple Files to Clipboard") {
 
     override fun actionPerformed(e: AnActionEvent) {
         val project: Project? = e.project
@@ -84,6 +62,10 @@ class CopyMultipleFilesAction : AnAction("Copy Multiple Files to Clipboard") {
                             processedFiles.add(file)
                         } catch (ex: Exception) {
                             ex.printStackTrace()
+                            Notifications.Bus.notify(
+                                Notification("com.saturnribbon", "Error", "Failed to process ${file.path}: ${ex.message}", NotificationType.ERROR),
+                                project
+                            )
                         }
                     }
                 }
@@ -107,7 +89,7 @@ class CopyMultipleFilesAction : AnAction("Copy Multiple Files to Clipboard") {
         }
 
         // Check if file is in excluded files list
-        if (file.name in excludedFiles) {
+        if (file.name in Exclusions.EXCLUDED_FILES) {
             return false
         }
 
@@ -115,7 +97,7 @@ class CopyMultipleFilesAction : AnAction("Copy Multiple Files to Clipboard") {
         val extension = file.extension?.lowercase() ?: ""
 
         // Skip binary and image files
-        if (extension in binaryExtensions || extension in imageExtensions) {
+        if (extension in Exclusions.BINARY_EXTENSIONS || extension in Exclusions.IMAGE_EXTENSIONS) {
             return false
         }
         // Skip files that are ignored by git
@@ -124,7 +106,7 @@ class CopyMultipleFilesAction : AnAction("Copy Multiple Files to Clipboard") {
             return false
         }
         // Skip files larger than 1MB
-        if (file.length > 1024 * 1024) {
+        if (file.length > Exclusions.MAX_FILE_SIZE_BYTES) {
             return false
         }
         return true
