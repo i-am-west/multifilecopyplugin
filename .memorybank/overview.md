@@ -6,8 +6,8 @@ The Multi-File Copy Plugin is an IntelliJ IDEA plugin designed to make it easy f
 ## Core Features
 1. **Copy Selected Files** - Allows users to select multiple files in the Project view and copy their contents to the clipboard
 2. **Copy Open Tabs** - Enables copying the contents of all currently open editor tabs
-3. **Copy Project Structure** - Extracts and copies the structural elements (classes, methods, fields) of the entire project without implementation details
-4. **Copy Simplified Structure** - Creates a token-efficient version of the project structure by omitting private members, annotations, and certain class types
+3. **Copy Project Structure** - Extracts and copies the structural elements (classes, methods, fields) of selected files or directories without implementation details
+4. **Copy Simplified Structure** - Creates a token-efficient version of the project structure for selected files or directories by omitting private members, annotations, and certain class types
 5. **File Path Preservation** - Each file's content is preceded by its file path for context
 6. **Smart File Filtering** - Automatically excludes binary files, large files, and certain system files
 
@@ -84,8 +84,8 @@ The Multi-File Copy Plugin is an IntelliJ IDEA plugin designed to make it easy f
 ## User Experience
 - Right-click on selected files in Project view → "Copy Multiple Files to Clipboard"
 - Access from Edit menu or editor tab context menu → "Copy Open Tabs to Clipboard"
-- Right-click on project in Project view → "Copy Project Structure to Clipboard"
-- Right-click on project in Project view → "Copy Simplified Structure to Clipboard"
+- Right-click on selected files or directories in Project view → "Copy Project Structure to Clipboard"
+- Right-click on selected files or directories in Project view → "Copy Simplified Structure to Clipboard"
 - Keyboard shortcuts for quick access
 - Notification system for error handling
 

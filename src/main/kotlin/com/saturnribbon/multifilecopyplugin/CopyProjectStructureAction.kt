@@ -42,14 +42,26 @@ class CopyProjectStructureAction : AnAction() {
 
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
-        val projectDir = project.guessProjectDir() ?: return
+        val selectedFiles = FileContentUtils.getSelectedFiles(e)
+        if (selectedFiles.isEmpty()) return
 
         val content = StringBuilder()
         content.append("----- Project Structure: ${project.name} -----\n\n")
         
         try {
             val psiManager = PsiManager.getInstance(project)
-            processDirectory(project, projectDir, psiManager, content, 0)
+            
+            // Create a set of directly selected files for tracking
+            val directlySelectedFiles = selectedFiles.toSet()
+            
+            // Process each selected file or directory
+            for (file in selectedFiles) {
+                if (file.isDirectory) {
+                    processDirectory(project, file, psiManager, content, 0)
+                } else {
+                    processFile(project, file, psiManager, content)
+                }
+            }
             
             FileContentUtils.copyToClipboard(content.toString())
         } catch (ex: Exception) {
