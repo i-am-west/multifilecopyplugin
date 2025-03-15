@@ -171,26 +171,29 @@ object StructureExtractionUtil {
                 return
             }
             
-            // Always use relative path for all detail levels
-            val filePath = FileContentUtils.getRelativePath(file, project)
-            content.append("----- $filePath -----\n")
-            
             // Extract structure based on file type
-            when (psiFile) {
-                is PsiJavaFile -> extractJavaFileStructure(psiFile, content, detailLevel)
-                is KtFile -> extractKotlinFileStructure(psiFile, content, detailLevel)
+            val fileStructure = when (psiFile) {
+                is PsiJavaFile -> extractJavaFileStructure(psiFile, detailLevel)
+                is KtFile -> extractKotlinFileStructure(psiFile, detailLevel)
                 else -> {
                     // For other file types, just add a placeholder
                     if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
                         // Skip non-code files in simplified structure
                         return
                     }
-                    content.append("[File content not shown for this file type]\n")
+                    "[File content not shown for this file type]"
                 }
             }
             
-            // Add exactly one blank line after each file
-            content.append("\n")
+            // Only add the file to the output if it has actual content
+            if (fileStructure.isNotEmpty()) {
+                // Always use relative path for all detail levels
+                val filePath = FileContentUtils.getRelativePath(file, project)
+                content.append("----- $filePath -----\n")
+                content.append(fileStructure)
+                // Add exactly one blank line after each file
+                content.append("\n")
+            }
         } catch (e: Exception) {
             LOG.warn("Error processing file ${file.path}", e)
             content.append("// Error processing file: ${e.message}\n\n")
@@ -202,9 +205,10 @@ object StructureExtractionUtil {
      */
     private fun extractJavaFileStructure(
         psiFile: PsiJavaFile,
-        content: StringBuilder,
         detailLevel: DetailLevel
-    ) {
+    ): String {
+        val content = StringBuilder()
+        
         // Add package declaration
         if (detailLevel != DetailLevel.SIMPLIFIED_STRUCTURE) {
             content.append("package ${psiFile.packageName};\n\n")
@@ -218,8 +222,10 @@ object StructureExtractionUtil {
                 continue
             }
             
-            extractJavaClass(psiClass, content, "", detailLevel)
+            content.append(extractJavaClass(psiClass, "", detailLevel))
         }
+        
+        return content.toString()
     }
     
     /**
@@ -227,12 +233,13 @@ object StructureExtractionUtil {
      */
     private fun extractJavaClass(
         psiClass: PsiClass,
-        content: StringBuilder,
         indent: String,
         detailLevel: DetailLevel
-    ) {
+    ): String {
         // Skip anonymous classes
-        if (psiClass.name == null) return
+        if (psiClass.name == null) return ""
+        
+        val content = StringBuilder()
         
         // Add class declaration with modifiers
         val modifiers = psiClass.modifierList?.text ?: ""
@@ -306,10 +313,15 @@ object StructureExtractionUtil {
         
         // Add inner classes
         for (innerClass in psiClass.innerClasses) {
-            extractJavaClass(innerClass, content, "$indent    ", detailLevel)
+            val innerClassContent = extractJavaClass(innerClass, "$indent    ", detailLevel)
+            if (innerClassContent.isNotEmpty()) {
+                content.append(innerClassContent)
+            }
         }
         
         content.append("$indent}\n")
+        
+        return content.toString()
     }
     
     /**
@@ -317,15 +329,18 @@ object StructureExtractionUtil {
      */
     private fun extractKotlinFileStructure(
         ktFile: KtFile,
-        content: StringBuilder,
         detailLevel: DetailLevel
-    ) {
+    ): String {
+        val content = StringBuilder()
+        
         // Add package declaration
         if (detailLevel != DetailLevel.SIMPLIFIED_STRUCTURE && ktFile.packageFqName.asString().isNotEmpty()) {
             content.append("package ${ktFile.packageFqName}\n\n")
         }
         
         // Extract top-level declarations
+        var hasContent = false
+        
         for (declaration in ktFile.declarations) {
             when (declaration) {
                 is KtClass -> {
@@ -335,10 +350,18 @@ object StructureExtractionUtil {
                         continue
                     }
                     
-                    extractKotlinClass(declaration, content, "", detailLevel)
+                    val classContent = extractKotlinClass(declaration, "", detailLevel)
+                    if (classContent.isNotEmpty()) {
+                        content.append(classContent)
+                        hasContent = true
+                    }
                 }
                 is KtObjectDeclaration -> {
-                    extractKotlinObject(declaration, content, "", detailLevel)
+                    val objectContent = extractKotlinObject(declaration, "", detailLevel)
+                    if (objectContent.isNotEmpty()) {
+                        content.append(objectContent)
+                        hasContent = true
+                    }
                 }
                 is KtProperty -> {
                     // Skip private properties in simplified structure
@@ -355,6 +378,7 @@ object StructureExtractionUtil {
                     
                     val type = declaration.typeReference?.text?.let { ": $it" } ?: ""
                     content.append("${modifiers}${if (declaration.isVar) "var" else "val"} ${declaration.name}$type\n")
+                    hasContent = true
                 }
                 is KtFunction -> {
                     // Skip private functions in simplified structure
@@ -378,9 +402,12 @@ object StructureExtractionUtil {
                         "${it.name}: ${it.typeReference?.text ?: "Any"}"
                     })
                     content.append(")$returnType\n")
+                    hasContent = true
                 }
             }
         }
+        
+        return if (hasContent) content.toString() else ""
     }
     
     /**
@@ -388,10 +415,11 @@ object StructureExtractionUtil {
      */
     private fun extractKotlinClass(
         ktClass: KtClass,
-        content: StringBuilder,
         indent: String,
         detailLevel: DetailLevel
-    ) {
+    ): String {
+        val content = StringBuilder()
+        
         // Add class declaration with modifiers
         val modifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
             // Remove public and protected modifiers in simplified structure
@@ -433,6 +461,9 @@ object StructureExtractionUtil {
         
         content.append(" {\n")
         
+        // Check if class has any non-private members to show
+        var hasContent = false
+        
         // Add properties
         for (property in ktClass.getProperties()) {
             // Skip private properties in simplified structure
@@ -449,6 +480,7 @@ object StructureExtractionUtil {
             
             val type = property.typeReference?.text?.let { ": $it" } ?: ""
             content.append("$indent    ${propModifiers}${if (property.isVar) "var" else "val"} ${property.name}$type\n")
+            hasContent = true
         }
         
         // Add functions
@@ -476,9 +508,12 @@ object StructureExtractionUtil {
                 "${it.name}: ${it.typeReference?.text ?: "Any"}"
             })
             content.append(")$returnType\n")
+            hasContent = true
         }
         
         content.append("$indent}\n")
+        
+        return if (hasContent || detailLevel != DetailLevel.SIMPLIFIED_STRUCTURE) content.toString() else ""
     }
     
     /**
@@ -486,10 +521,11 @@ object StructureExtractionUtil {
      */
     private fun extractKotlinObject(
         ktObject: KtObjectDeclaration,
-        content: StringBuilder,
         indent: String,
         detailLevel: DetailLevel
-    ) {
+    ): String {
+        val content = StringBuilder()
+        
         // Add object declaration with modifiers
         val modifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
             ktObject.modifierList?.text?.replace("public ", "")?.replace("protected ", "")?.let { "$it " } ?: ""
@@ -512,6 +548,9 @@ object StructureExtractionUtil {
         
         content.append(" {\n")
         
+        // Check if object has any non-private members to show
+        var hasContent = false
+        
         // Add properties
         for (property in ktObject.declarations.filterIsInstance<KtProperty>()) {
             // Skip private properties in simplified structure
@@ -528,6 +567,7 @@ object StructureExtractionUtil {
             
             val type = property.typeReference?.text?.let { ": $it" } ?: ""
             content.append("$indent    ${propModifiers}${if (property.isVar) "var" else "val"} ${property.name}$type\n")
+            hasContent = true
         }
         
         // Add functions
@@ -555,9 +595,12 @@ object StructureExtractionUtil {
                 "${it.name}: ${it.typeReference?.text ?: "Any"}"
             })
             content.append(")$returnType\n")
+            hasContent = true
         }
         
         content.append("$indent}\n")
+        
+        return if (hasContent || detailLevel != DetailLevel.SIMPLIFIED_STRUCTURE) content.toString() else ""
     }
     
     /**

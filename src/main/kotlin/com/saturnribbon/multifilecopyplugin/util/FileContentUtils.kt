@@ -17,7 +17,7 @@ object FileContentUtils {
         val relativePath = getRelativePath(file, project)
         val fileContent = String(file.contentsToByteArray(), file.charset)
         val trimmedContent = fileContent.trimEnd()
-        return "----- $relativePath -----\n$trimmedContent\n\n"
+        return "----- $relativePath -----\n$trimmedContent"
     }
     
     /**

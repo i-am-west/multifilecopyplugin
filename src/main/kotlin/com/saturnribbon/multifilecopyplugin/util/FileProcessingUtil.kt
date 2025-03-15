@@ -60,7 +60,13 @@ object FileProcessingUtil {
     ) {
         if (!processedFiles.contains(file) && shouldProcessFile(file, directlySelectedFiles, project)) {
             try {
-                content.append(FileContentUtils.fileToString(file, project))
+                val fileContent = FileContentUtils.fileToString(file, project)
+                // Only add the file if it has content after the header
+                if (fileContent.contains("\n") && fileContent.split("\n", limit = 2)[1].isNotEmpty()) {
+                    content.append(fileContent)
+                    // Add exactly one blank line after each file
+                    content.append("\n\n")
+                }
                 processedFiles.add(file)
             } catch (ex: Exception) {
                 notifyError(project, file, ex)
