@@ -10,6 +10,7 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.saturnribbon.multifilecopyplugin.constants.Exclusions
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.lexer.KtTokens
+import com.saturnribbon.multifilecopyplugin.util.FileContentUtils
 
 /**
  * Utility class for extracting code structure with different levels of detail.
@@ -71,7 +72,8 @@ object StructureExtractionUtil {
         // Process files based on detail level
         when (detailLevel) {
             DetailLevel.FULL_CONTENT -> {
-                // Use existing FileProcessingUtil for full content
+                // For FULL_CONTENT, we'll still use FileProcessingUtil but we need to modify
+                // how file paths are displayed in FileContentUtils
                 return FileProcessingUtil.processFiles(files, project, directlySelectedFiles)
             }
             DetailLevel.PROJECT_STRUCTURE, DetailLevel.SIMPLIFIED_STRUCTURE -> {
@@ -169,11 +171,8 @@ object StructureExtractionUtil {
                 return
             }
             
-            // Add file path as header
-            val filePath = when (detailLevel) {
-                DetailLevel.SIMPLIFIED_STRUCTURE -> getRelativePath(file, project)
-                else -> file.path
-            }
+            // Always use relative path for all detail levels
+            val filePath = FileContentUtils.getRelativePath(file, project)
             content.append("----- $filePath -----\n")
             
             // Extract structure based on file type
@@ -625,17 +624,5 @@ object StructureExtractionUtil {
             current = current.parent
         }
         return false
-    }
-    
-    /**
-     * Gets the relative path of a file in the project.
-     */
-    private fun getRelativePath(file: VirtualFile, project: Project): String {
-        val projectDir = project.basePath ?: return file.path
-        return if (file.path.startsWith(projectDir)) {
-            file.path.substring(projectDir.length + 1)
-        } else {
-            file.path
-        }
     }
 } 

@@ -60,7 +60,7 @@ object FileProcessingUtil {
     ) {
         if (!processedFiles.contains(file) && shouldProcessFile(file, directlySelectedFiles, project)) {
             try {
-                content.append(FileContentUtils.fileToString(file))
+                content.append(FileContentUtils.fileToString(file, project))
                 processedFiles.add(file)
             } catch (ex: Exception) {
                 notifyError(project, file, ex)
