@@ -56,7 +56,10 @@ class CopySimplifiedStructureAction : AnAction() {
             val psiManager = PsiManager.getInstance(project)
             processDirectory(project, projectDir, psiManager, content, 0)
             
-            FileContentUtils.copyToClipboard(content.toString())
+            // Post-process the output to remove any remaining "override" keywords
+            val finalContent = postProcessOutput(content.toString())
+            
+            FileContentUtils.copyToClipboard(finalContent)
         } catch (ex: Exception) {
             LOG.warn("Error processing project structure", ex)
         }
@@ -184,17 +187,35 @@ class CopySimplifiedStructureAction : AnAction() {
             // Process based on file type
             when {
                 psiFile is PsiJavaFile -> {
-                    val structure = extractSimplifiedJavaStructure(psiFile)
-                    if (structure.isNotEmpty()) {
-                        content.append("\n${file.path}:\n")
-                        content.append(structure)
+                    // Check if file has any non-empty classes
+                    val hasNonEmptyClasses = psiFile.classes.any { classHasNonPrivateMembers(it) }
+                    
+                    if (hasNonEmptyClasses) {
+                        val structure = extractSimplifiedJavaStructure(psiFile)
+                        if (structure.isNotEmpty()) {
+                            // Get relative path by removing project base path
+                            val projectPath = project.basePath ?: ""
+                            val relativePath = file.path.removePrefix(projectPath).removePrefix("/").removePrefix("\\")
+                            
+                            content.append("\n$relativePath:\n")
+                            content.append(structure)
+                        }
                     }
                 }
                 psiFile is KtFile -> {
-                    val structure = extractSimplifiedKotlinStructure(psiFile)
-                    if (structure.isNotEmpty()) {
-                        content.append("\n${file.path}:\n")
-                        content.append(structure)
+                    // Check if file has any non-empty declarations
+                    val hasNonEmptyDeclarations = fileHasNonPrivateDeclarations(psiFile)
+                    
+                    if (hasNonEmptyDeclarations) {
+                        val structure = extractSimplifiedKotlinStructure(psiFile)
+                        if (structure.isNotEmpty()) {
+                            // Get relative path by removing project base path
+                            val projectPath = project.basePath ?: ""
+                            val relativePath = file.path.removePrefix(projectPath).removePrefix("/").removePrefix("\\")
+                            
+                            content.append("\n$relativePath:\n")
+                            content.append(structure)
+                        }
                     }
                 }
                 // Add support for other languages as needed
@@ -207,16 +228,17 @@ class CopySimplifiedStructureAction : AnAction() {
     private fun extractSimplifiedJavaStructure(psiFile: PsiJavaFile): String {
         val content = StringBuilder()
         
-        // Add package declaration
-        if (psiFile.packageName.isNotEmpty()) {
-            content.append("package ${psiFile.packageName};\n\n")
-        }
-        
-        // Process classes
+        // Process classes (skip package declaration)
         for (psiClass in psiFile.classes) {
             if (!shouldSkipClass(psiClass.name)) {
                 extractSimplifiedJavaClass(psiClass, content, "")
+                content.append("\n") // Add a single blank line after each class
             }
+        }
+        
+        // Remove the last newline if it exists to avoid extra blank line at the end
+        if (content.isNotEmpty() && content.endsWith("\n\n")) {
+            content.setLength(content.length - 1)
         }
         
         return content.toString()
@@ -225,6 +247,11 @@ class CopySimplifiedStructureAction : AnAction() {
     private fun extractSimplifiedJavaClass(psiClass: PsiClass, content: StringBuilder, indent: String) {
         // Skip Module and Component classes
         if (shouldSkipClass(psiClass.name)) {
+            return
+        }
+        
+        // Check if class has any non-private members
+        if (!classHasNonPrivateMembers(psiClass)) {
             return
         }
         
@@ -280,7 +307,7 @@ class CopySimplifiedStructureAction : AnAction() {
             }
         }
         
-        content.append("$indent}\n\n")
+        content.append("$indent}\n")
     }
     
     private fun simplifyJavaModifiers(modifiers: String): String {
@@ -293,28 +320,28 @@ class CopySimplifiedStructureAction : AnAction() {
         // Remove public modifier (it's the default)
         val withoutPublic = withoutPrivate.replace(Regex("\\bpublic\\s+"), "")
         
-        return if (withoutPublic.trim().isEmpty()) "" else "$withoutPublic "
+        // Remove protected modifier
+        val withoutProtected = withoutPublic.replace(Regex("\\bprotected\\s+"), "")
+        
+        return if (withoutProtected.trim().isEmpty()) "" else "$withoutProtected "
     }
 
     private fun extractSimplifiedKotlinStructure(ktFile: KtFile): String {
         val content = StringBuilder()
         
-        // Add package declaration
-        ktFile.packageFqName.takeIf { !it.isRoot }?.let {
-            content.append("package $it\n\n")
-        }
-        
-        // Process top-level declarations
+        // Process top-level declarations (skip package declaration)
         for (declaration in ktFile.declarations) {
             when (declaration) {
                 is KtClass -> {
                     if (!shouldSkipClass(declaration.name)) {
                         extractSimplifiedKotlinClass(declaration, content, "")
+                        content.append("\n") // Add a single blank line after each class
                     }
                 }
                 is KtObjectDeclaration -> {
                     if (!shouldSkipClass(declaration.name)) {
                         extractSimplifiedKotlinObject(declaration, content, "")
+                        content.append("\n") // Add a single blank line after each object
                     }
                 }
                 is KtFunction -> {
@@ -327,17 +354,24 @@ class CopySimplifiedStructureAction : AnAction() {
                         content.append(declaration.valueParameters.joinToString(", ") {
                             "${it.name}: ${it.typeReference?.text ?: "Any"}"
                         })
-                        content.append("): $returnType\n\n")
+                        content.append("): $returnType\n")
+                        content.append("\n") // Add a single blank line after each function
                     }
                 }
                 is KtProperty -> {
                     if (!isPrivateKotlinDeclaration(declaration)) {
                         val modifiers = simplifyKotlinModifiers(declaration.modifierList?.text)
                         val type = declaration.typeReference?.text?.let { ": $it" } ?: ""
-                        content.append("${modifiers}${if (declaration.isVar) "var" else "val"} ${declaration.name}$type\n\n")
+                        content.append("${modifiers}${if (declaration.isVar) "var" else "val"} ${declaration.name}$type\n")
+                        content.append("\n") // Add a single blank line after each property
                     }
                 }
             }
+        }
+        
+        // Remove the last newline if it exists to avoid extra blank line at the end
+        if (content.isNotEmpty() && content.endsWith("\n\n")) {
+            content.setLength(content.length - 1)
         }
         
         return content.toString()
@@ -346,6 +380,11 @@ class CopySimplifiedStructureAction : AnAction() {
     private fun extractSimplifiedKotlinClass(ktClass: KtClass, content: StringBuilder, indent: String) {
         // Skip Module and Component classes
         if (shouldSkipClass(ktClass.name)) {
+            return
+        }
+        
+        // Check if class has any non-private members
+        if (!classHasNonPrivateKotlinMembers(ktClass)) {
             return
         }
         
@@ -419,12 +458,17 @@ class CopySimplifiedStructureAction : AnAction() {
             }
         }
         
-        content.append("$indent}\n\n")
+        content.append("$indent}\n")
     }
     
     private fun extractSimplifiedKotlinObject(ktObject: KtObjectDeclaration, content: StringBuilder, indent: String) {
         // Skip Module and Component objects
         if (shouldSkipClass(ktObject.name)) {
+            return
+        }
+        
+        // Check if object has any non-private members
+        if (!objectHasNonPrivateMembers(ktObject)) {
             return
         }
         
@@ -470,7 +514,7 @@ class CopySimplifiedStructureAction : AnAction() {
             content.append(")$returnType\n")
         }
         
-        content.append("$indent}\n\n")
+        content.append("$indent}\n")
     }
     
     private fun isPrivateKotlinDeclaration(declaration: KtModifierListOwner): Boolean {
@@ -490,12 +534,98 @@ class CopySimplifiedStructureAction : AnAction() {
         // Remove public modifier (it's the default)
         val withoutPublic = withoutPrivate.replace(Regex("\\bpublic\\s+"), "")
         
-        // Remove override modifier (we'll handle this separately for functions)
-        val withoutOverride = withoutPublic.replace(Regex("\\boverride\\s+"), "")
+        // Remove protected modifier
+        val withoutProtected = withoutPublic.replace(Regex("\\bprotected\\s+"), "")
+        
+        // Remove override modifier
+        val withoutOverride = withoutProtected.replace(Regex("\\boverride\\s+"), "")
         
         return if (withoutOverride.trim().isEmpty()) "" else "$withoutOverride "
     }
 
+    // Helper method to check if a Java class has any non-private members
+    private fun classHasNonPrivateMembers(psiClass: PsiClass): Boolean {
+        // Skip Module and Component classes
+        if (shouldSkipClass(psiClass.name)) {
+            return false
+        }
+        
+        // Check if class has any non-private members
+        val hasNonPrivateFields = psiClass.fields.any { !it.hasModifierProperty(PsiModifier.PRIVATE) }
+        val hasNonPrivateMethods = psiClass.methods.any { !it.hasModifierProperty(PsiModifier.PRIVATE) }
+        val hasNonPrivateInnerClasses = psiClass.innerClasses.any { 
+            !it.hasModifierProperty(PsiModifier.PRIVATE) && classHasNonPrivateMembers(it)
+        }
+        
+        return hasNonPrivateFields || hasNonPrivateMethods || hasNonPrivateInnerClasses
+    }
+    
+    // Helper method to check if a Kotlin file has any non-private declarations
+    private fun fileHasNonPrivateDeclarations(ktFile: KtFile): Boolean {
+        // Check top-level declarations
+        for (declaration in ktFile.declarations) {
+            when (declaration) {
+                is KtClass -> {
+                    if (!shouldSkipClass(declaration.name) && classHasNonPrivateKotlinMembers(declaration)) {
+                        return true
+                    }
+                }
+                is KtObjectDeclaration -> {
+                    if (!shouldSkipClass(declaration.name) && objectHasNonPrivateMembers(declaration)) {
+                        return true
+                    }
+                }
+                is KtFunction -> {
+                    if (!isPrivateKotlinDeclaration(declaration)) {
+                        return true
+                    }
+                }
+                is KtProperty -> {
+                    if (!isPrivateKotlinDeclaration(declaration)) {
+                        return true
+                    }
+                }
+            }
+        }
+        return false
+    }
+    
+    // Helper method to check if a Kotlin class has any non-private members
+    private fun classHasNonPrivateKotlinMembers(ktClass: KtClass): Boolean {
+        // Check if class has any non-private members
+        val hasNonPrivateProperties = ktClass.getProperties().any { !isPrivateKotlinDeclaration(it) }
+        val hasNonPrivateFunctions = ktClass.declarations.filterIsInstance<KtFunction>().any { 
+            !isPrivateKotlinDeclaration(it) && it.name != null
+        }
+        val hasNonPrivateNestedClasses = PsiTreeUtil.findChildrenOfType(ktClass, KtClass::class.java).any {
+            it.parent == ktClass && !isPrivateKotlinDeclaration(it) && classHasNonPrivateKotlinMembers(it)
+        }
+        val hasNonPrivateNestedObjects = PsiTreeUtil.findChildrenOfType(ktClass, KtObjectDeclaration::class.java).any {
+            it.parent == ktClass && !isPrivateKotlinDeclaration(it) && objectHasNonPrivateMembers(it)
+        }
+        
+        return hasNonPrivateProperties || hasNonPrivateFunctions || hasNonPrivateNestedClasses || hasNonPrivateNestedObjects
+    }
+    
+    // Helper method to check if a Kotlin object has any non-private members
+    private fun objectHasNonPrivateMembers(ktObject: KtObjectDeclaration): Boolean {
+        val hasNonPrivateProperties = ktObject.declarations.filterIsInstance<KtProperty>().any { 
+            !isPrivateKotlinDeclaration(it) 
+        }
+        val hasNonPrivateFunctions = ktObject.declarations.filterIsInstance<KtFunction>().any { 
+            !isPrivateKotlinDeclaration(it) && it.name != null
+        }
+        
+        return hasNonPrivateProperties || hasNonPrivateFunctions
+    }
+
+    // Add a method to process the actual output before copying to clipboard
+    private fun postProcessOutput(content: String): String {
+        // Remove any remaining "override" keywords that might have been missed
+        return content.replace(Regex("\\boverride\\s+"), "")
+    }
+
+    // This is the actual implementation - we need to keep 'override fun' here
     override fun update(e: AnActionEvent) {
         e.presentation.isEnabled = e.project != null
     }
