@@ -15,7 +15,9 @@ object FileContentUtils {
 
     fun fileToString(file: VirtualFile, project: Project): String {
         val relativePath = getRelativePath(file, project)
-        return "----- $relativePath -----\n" + String(file.contentsToByteArray(), file.charset)
+        val fileContent = String(file.contentsToByteArray(), file.charset)
+        val trimmedContent = fileContent.trimEnd()
+        return "----- $relativePath -----\n$trimmedContent\n\n"
     }
     
     /**

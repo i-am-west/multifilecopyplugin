@@ -185,10 +185,11 @@ object StructureExtractionUtil {
                         // Skip non-code files in simplified structure
                         return
                     }
-                    content.append("[File content not shown for this file type]\n\n")
+                    content.append("[File content not shown for this file type]\n")
                 }
             }
             
+            // Add exactly one blank line after each file
             content.append("\n")
         } catch (e: Exception) {
             LOG.warn("Error processing file ${file.path}", e)
@@ -308,7 +309,7 @@ object StructureExtractionUtil {
             extractJavaClass(innerClass, content, "$indent    ", detailLevel)
         }
         
-        content.append("$indent}\n\n")
+        content.append("$indent}\n")
     }
     
     /**
@@ -477,7 +478,7 @@ object StructureExtractionUtil {
             content.append(")$returnType\n")
         }
         
-        content.append("$indent}\n\n")
+        content.append("$indent}\n")
     }
     
     /**
@@ -556,7 +557,7 @@ object StructureExtractionUtil {
             content.append(")$returnType\n")
         }
         
-        content.append("$indent}\n\n")
+        content.append("$indent}\n")
     }
     
     /**
