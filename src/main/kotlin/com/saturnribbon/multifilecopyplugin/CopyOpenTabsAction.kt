@@ -5,7 +5,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.saturnribbon.multifilecopyplugin.util.FileContentUtils
-import com.saturnribbon.multifilecopyplugin.util.FileProcessingUtil
+import com.saturnribbon.multifilecopyplugin.util.StructureExtractionUtil
 
 class CopyOpenTabsAction : AnAction() {
     init {
@@ -20,7 +20,12 @@ class CopyOpenTabsAction : AnAction() {
         val project = e.project ?: return
         val openFiles = FileEditorManager.getInstance(project).openFiles
 
-        val content = FileProcessingUtil.processFiles(openFiles, project, openFiles.toSet())
+        val content = StructureExtractionUtil.extractStructure(
+            openFiles,
+            project,
+            StructureExtractionUtil.DetailLevel.FULL_CONTENT,
+            openFiles.toSet()
+        )
         FileContentUtils.copyToClipboard(content)
     }
 

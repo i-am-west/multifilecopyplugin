@@ -5,7 +5,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.saturnribbon.multifilecopyplugin.util.FileContentUtils
-import com.saturnribbon.multifilecopyplugin.util.FileProcessingUtil
+import com.saturnribbon.multifilecopyplugin.util.StructureExtractionUtil
 
 class CopySelectedFilesAction : AnAction() {
     init {
@@ -20,9 +20,10 @@ class CopySelectedFilesAction : AnAction() {
         val project = e.project ?: return
         val selectedFiles = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY) ?: return
 
-        val content = FileProcessingUtil.processFiles(
+        val content = StructureExtractionUtil.extractStructure(
             selectedFiles,
             project,
+            StructureExtractionUtil.DetailLevel.FULL_CONTENT,
             selectedFiles.toSet()
         )
         FileContentUtils.copyToClipboard(content)
