@@ -13,6 +13,14 @@ import com.saturnribbon.multifilecopyplugin.util.FileContentUtils
 import org.jetbrains.kotlin.psi.*
 
 class CopyProjectStructureAction : AnAction() {
+    // Common test directory names
+    private val testDirectories = setOf(
+        "test", "tests", "testing",
+        "src/test", "src/tests",
+        "src/androidTest", "src/testDebug",
+        "src/integrationTest", "src/unitTest"
+    )
+
     init {
         templatePresentation.text = "Copy Project Structure to Clipboard"
         templatePresentation.description = "Copies the structure of the project (classes, methods, fields) without implementation details"
@@ -52,6 +60,11 @@ class CopyProjectStructureAction : AnAction() {
             return
         }
         
+        // Skip test directories
+        if (isTestDirectory(directory)) {
+            return
+        }
+        
         for (child in directory.children) {
             if (child.isDirectory) {
                 processDirectory(project, child, psiManager, content, depth + 1)
@@ -59,6 +72,38 @@ class CopyProjectStructureAction : AnAction() {
                 processFile(project, child, psiManager, content)
             }
         }
+    }
+
+    private fun isTestDirectory(directory: VirtualFile): Boolean {
+        // Check if the directory name matches common test directory names
+        if (directory.name.lowercase() in setOf("test", "tests", "testing")) {
+            return true
+        }
+        
+        // Check if the full path contains test directory patterns
+        val path = directory.path.replace('\\', '/')
+        return testDirectories.any { testDir -> 
+            path.endsWith("/$testDir") || path.contains("/$testDir/")
+        }
+    }
+
+    private fun isTestFile(file: VirtualFile): Boolean {
+        // Check if file is in a test directory
+        var parent = file.parent
+        while (parent != null) {
+            if (isTestDirectory(parent)) {
+                return true
+            }
+            parent = parent.parent
+        }
+        
+        // Check if file name indicates it's a test
+        val fileName = file.nameWithoutExtension.lowercase()
+        return fileName.startsWith("test") || 
+               fileName.endsWith("test") || 
+               fileName.endsWith("tests") || 
+               fileName.endsWith("spec") ||
+               fileName.contains("test_")
     }
 
     private fun processFile(
@@ -81,6 +126,11 @@ class CopyProjectStructureAction : AnAction() {
         
         // Skip large files
         if (file.length > Exclusions.MAX_FILE_SIZE_BYTES) {
+            return
+        }
+        
+        // Skip test files
+        if (isTestFile(file)) {
             return
         }
         

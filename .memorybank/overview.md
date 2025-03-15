@@ -47,6 +47,7 @@ The Multi-File Copy Plugin is an IntelliJ IDEA plugin designed to make it easy f
    - Files larger than 1MB
    - Files in hidden directories (starting with `.`)
    - Specific excluded files like package-lock.json, build files, etc.
+   - Test files and directories
 3. VCS integration to respect ignored files
 
 ## PSI Processing Logic
@@ -55,6 +56,14 @@ The Multi-File Copy Plugin is an IntelliJ IDEA plugin designed to make it easy f
    - Uses PSI to parse code files (Java, Kotlin)
    - Extracts structural elements (classes, methods, fields) without implementation details
    - Formats the output with file paths and proper indentation
+   - Excludes test classes and test directories
+   - Handles both class and object declarations in Kotlin
+
+## Test Exclusion Logic
+1. The plugin identifies and excludes test-related code:
+   - Skips common test directories (`test`, `tests`, `src/test`, etc.)
+   - Skips files with test-related names (`*Test.java`, `Test*.kt`, etc.)
+   - Checks both file names and directory paths to identify test code
 
 ## User Experience
 - Right-click on selected files in Project view → "Copy Multiple Files to Clipboard"
