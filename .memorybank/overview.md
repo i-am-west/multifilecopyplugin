@@ -65,10 +65,11 @@ The Multi-File Copy Plugin is an IntelliJ IDEA plugin designed to make it easy f
 ## Simplified Structure Logic
 1. The simplified structure feature further reduces token usage by:
    - Omitting all private members and methods
-   - Removing annotations
+   - Removing annotations except for REST API annotations (GET, POST, PUT, DELETE, PATH)
    - Skipping Module, Component, Config, and Configuration classes
    - Removing redundant modifiers (e.g., "public" since it's the default)
    - Simplifying type declarations (e.g., "String" instead of "public static final String")
+   - Removing both "override" and "fun" keywords from Kotlin methods (e.g., "update(e: AnActionEvent)" instead of "override fun update(e: AnActionEvent)")
    - Focusing only on the public API of the codebase
 
 ## Test Exclusion Logic

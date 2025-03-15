@@ -284,8 +284,8 @@ class CopySimplifiedStructureAction : AnAction() {
     }
     
     private fun simplifyJavaModifiers(modifiers: String): String {
-        // Remove annotations
-        val withoutAnnotations = modifiers.replace(Regex("@\\w+(?:\\([^)]*\\))?\\s*"), "")
+        // Remove annotations except REST API annotations
+        val withoutAnnotations = modifiers.replace(Regex("@(?!GET|POST|PUT|DELETE|PATH\\b)\\w+(?:\\([^)]*\\))?\\s*"), "")
         
         // Remove private modifier (we're skipping private members anyway)
         val withoutPrivate = withoutAnnotations.replace(Regex("\\bprivate\\s+"), "")
@@ -321,7 +321,9 @@ class CopySimplifiedStructureAction : AnAction() {
                     if (!isPrivateKotlinDeclaration(declaration)) {
                         val modifiers = simplifyKotlinModifiers(declaration.modifierList?.text)
                         val returnType = declaration.typeReference?.text ?: "Unit"
-                        content.append("${modifiers}fun ${declaration.name}(")
+                        
+                        // Remove "fun" keyword for all functions
+                        content.append("${modifiers}${declaration.name}(")
                         content.append(declaration.valueParameters.joinToString(", ") {
                             "${it.name}: ${it.typeReference?.text ?: "Any"}"
                         })
@@ -395,7 +397,8 @@ class CopySimplifiedStructureAction : AnAction() {
             val modifiers = simplifyKotlinModifiers(function.modifierList?.text)
             val returnType = function.typeReference?.text?.let { ": $it" } ?: ""
             
-            content.append("$indent    ${modifiers}fun ${function.name}(")
+            // Remove "fun" keyword for all functions
+            content.append("$indent    ${modifiers}${function.name}(")
             content.append(function.valueParameters.joinToString(", ") {
                 "${it.name}: ${it.typeReference?.text ?: "Any"}"
             })
@@ -459,7 +462,8 @@ class CopySimplifiedStructureAction : AnAction() {
             val funcModifiers = simplifyKotlinModifiers(function.modifierList?.text)
             val returnType = function.typeReference?.text?.let { ": $it" } ?: ""
             
-            content.append("$indent    ${funcModifiers}fun ${function.name}(")
+            // Remove "fun" keyword for all functions
+            content.append("$indent    ${funcModifiers}${function.name}(")
             content.append(function.valueParameters.joinToString(", ") {
                 "${it.name}: ${it.typeReference?.text ?: "Any"}"
             })
@@ -477,8 +481,8 @@ class CopySimplifiedStructureAction : AnAction() {
     private fun simplifyKotlinModifiers(modifiers: String?): String {
         if (modifiers.isNullOrBlank()) return ""
         
-        // Remove annotations
-        val withoutAnnotations = modifiers.replace(Regex("@\\w+(?:\\([^)]*\\))?\\s*"), "")
+        // Remove annotations except REST API annotations
+        val withoutAnnotations = modifiers.replace(Regex("@(?!GET|POST|PUT|DELETE|PATH\\b)\\w+(?:\\([^)]*\\))?\\s*"), "")
         
         // Remove private modifier (we're skipping private members anyway)
         val withoutPrivate = withoutAnnotations.replace(Regex("\\bprivate\\s+"), "")
@@ -486,7 +490,10 @@ class CopySimplifiedStructureAction : AnAction() {
         // Remove public modifier (it's the default)
         val withoutPublic = withoutPrivate.replace(Regex("\\bpublic\\s+"), "")
         
-        return if (withoutPublic.trim().isEmpty()) "" else "$withoutPublic "
+        // Remove override modifier (we'll handle this separately for functions)
+        val withoutOverride = withoutPublic.replace(Regex("\\boverride\\s+"), "")
+        
+        return if (withoutOverride.trim().isEmpty()) "" else "$withoutOverride "
     }
 
     override fun update(e: AnActionEvent) {
