@@ -14,6 +14,8 @@
 
   <depends>com.intellij.modules.platform</depends>
   <depends>com.intellij.modules.vcs</depends>
+  <depends>com.intellij.modules.java</depends>
+  <depends>org.jetbrains.kotlin</depends>
   <resource-bundle>messages</resource-bundle>
   <extensions defaultExtensionNs="com.intellij">
     <notificationGroup id="FileProcessingUtil"
@@ -38,6 +40,13 @@
       <add-to-group group-id="EditorTabPopupMenu" anchor="after" relative-to-action="CopyReference"/>
     <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl T"/>
 </action>
-
+    <action id="CopyProjectStructureContent"
+        class="com.saturnribbon.multifilecopyplugin.CopyProjectStructureAction"
+        text="Copy Project Structure to Clipboard"
+        description="Copies the structure of the project (classes, methods, fields) without implementation details">
+      <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="CopyMultipleFilesContent"/>
+      <add-to-group group-id="MainMenu" anchor="after" relative-to-action="EditMenu"/>
+      <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl alt S"/>
+    </action>
   </actions>
 </idea-plugin>
