@@ -7,8 +7,9 @@ The Multi-File Copy Plugin is an IntelliJ IDEA plugin designed to make it easy f
 1. **Copy Selected Files** - Allows users to select multiple files in the Project view and copy their contents to the clipboard
 2. **Copy Open Tabs** - Enables copying the contents of all currently open editor tabs
 3. **Copy Project Structure** - Extracts and copies the structural elements (classes, methods, fields) of the entire project without implementation details
-4. **File Path Preservation** - Each file's content is preceded by its file path for context
-5. **Smart File Filtering** - Automatically excludes binary files, large files, and certain system files
+4. **Copy Simplified Structure** - Creates a token-efficient version of the project structure by omitting private members, annotations, and certain class types
+5. **File Path Preservation** - Each file's content is preceded by its file path for context
+6. **Smart File Filtering** - Automatically excludes binary files, large files, and certain system files
 
 ## Technical Architecture
 
@@ -17,6 +18,7 @@ The Multi-File Copy Plugin is an IntelliJ IDEA plugin designed to make it easy f
   - `CopySelectedFilesAction.kt` - Handles copying selected files from the Project view
   - `CopyOpenTabsAction.kt` - Handles copying all open editor tabs
   - `CopyProjectStructureAction.kt` - Handles extracting and copying the project's code structure
+  - `CopySimplifiedStructureAction.kt` - Handles extracting and copying a simplified version of the project structure
 
 - **Utilities**:
   - `FileContentUtils.kt` - Provides clipboard operations and file content formatting
@@ -31,6 +33,7 @@ The Multi-File Copy Plugin is an IntelliJ IDEA plugin designed to make it easy f
   - Copy Selected Files: `Shift+Ctrl+Alt+C`
   - Copy Open Tabs: `Shift+Ctrl+T`
   - Copy Project Structure: `Shift+Ctrl+Alt+S`
+  - Copy Simplified Structure: `Shift+Ctrl+Alt+P`
 
 ## Technical Details
 - Written in Kotlin
@@ -59,6 +62,15 @@ The Multi-File Copy Plugin is an IntelliJ IDEA plugin designed to make it easy f
    - Excludes test classes and test directories
    - Handles both class and object declarations in Kotlin
 
+## Simplified Structure Logic
+1. The simplified structure feature further reduces token usage by:
+   - Omitting all private members and methods
+   - Removing annotations
+   - Skipping Module, Component, Config, and Configuration classes
+   - Removing redundant modifiers (e.g., "public" since it's the default)
+   - Simplifying type declarations (e.g., "String" instead of "public static final String")
+   - Focusing only on the public API of the codebase
+
 ## Test Exclusion Logic
 1. The plugin identifies and excludes test-related code:
    - Skips common test directories (`test`, `tests`, `src/test`, etc.)
@@ -69,6 +81,7 @@ The Multi-File Copy Plugin is an IntelliJ IDEA plugin designed to make it easy f
 - Right-click on selected files in Project view → "Copy Multiple Files to Clipboard"
 - Access from Edit menu or editor tab context menu → "Copy Open Tabs to Clipboard"
 - Right-click on project in Project view → "Copy Project Structure to Clipboard"
+- Right-click on project in Project view → "Copy Simplified Structure to Clipboard"
 - Keyboard shortcuts for quick access
 - Notification system for error handling
 

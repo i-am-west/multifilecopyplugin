@@ -48,5 +48,13 @@
       <add-to-group group-id="MainMenu" anchor="after" relative-to-action="EditMenu"/>
       <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl alt S"/>
     </action>
+    <action id="CopySimplifiedStructureContent"
+        class="com.saturnribbon.multifilecopyplugin.CopySimplifiedStructureAction"
+        text="Copy Simplified Structure to Clipboard"
+        description="Copies a simplified structure of the project (public API only) without implementation details">
+      <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="CopyProjectStructureContent"/>
+      <add-to-group group-id="MainMenu" anchor="after" relative-to-action="EditMenu"/>
+      <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl alt P"/>
+    </action>
   </actions>
 </idea-plugin>
