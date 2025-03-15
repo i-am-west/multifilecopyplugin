@@ -5,6 +5,10 @@ build/
 !**/src/test/**/build/
 
 ### IntelliJ IDEA ###
+.idea/
+# Keep specific .idea files if needed in the future
+#!.idea/codeStyles/
+#!.idea/inspectionProfiles/
 .idea/modules.xml
 .idea/jarRepositories.xml
 .idea/compiler.xml

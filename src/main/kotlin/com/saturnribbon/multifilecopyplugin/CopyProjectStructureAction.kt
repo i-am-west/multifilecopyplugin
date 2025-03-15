@@ -3,8 +3,11 @@ package com.saturnribbon.multifilecopyplugin
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
+import com.intellij.openapi.vcs.FileStatus
+import com.intellij.openapi.vcs.FileStatusManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
@@ -13,12 +16,19 @@ import com.saturnribbon.multifilecopyplugin.util.FileContentUtils
 import org.jetbrains.kotlin.psi.*
 
 class CopyProjectStructureAction : AnAction() {
+    private val LOG = Logger.getInstance(CopyProjectStructureAction::class.java)
+    
     // Common test directory names
     private val testDirectories = setOf(
         "test", "tests", "testing",
         "src/test", "src/tests",
         "src/androidTest", "src/testDebug",
         "src/integrationTest", "src/unitTest"
+    )
+    
+    // VCS directories to skip
+    private val vcsDirectories = setOf(
+        ".git", ".svn", ".hg", ".bzr", "_darcs", ".github"
     )
 
     init {
@@ -37,10 +47,14 @@ class CopyProjectStructureAction : AnAction() {
         val content = StringBuilder()
         content.append("----- Project Structure: ${project.name} -----\n\n")
         
-        val psiManager = PsiManager.getInstance(project)
-        processDirectory(project, projectDir, psiManager, content, 0)
-        
-        FileContentUtils.copyToClipboard(content.toString())
+        try {
+            val psiManager = PsiManager.getInstance(project)
+            processDirectory(project, projectDir, psiManager, content, 0)
+            
+            FileContentUtils.copyToClipboard(content.toString())
+        } catch (ex: Exception) {
+            LOG.warn("Error processing project structure", ex)
+        }
     }
 
     private fun processDirectory(
@@ -50,27 +64,36 @@ class CopyProjectStructureAction : AnAction() {
         content: StringBuilder,
         depth: Int
     ) {
-        // Skip excluded directories
-        if (directory.name in Exclusions.EXCLUDED_DIRECTORIES && depth > 0) {
-            return
-        }
-        
-        // Skip hidden directories (starting with .)
-        if (directory.name.startsWith(".") && depth > 0) {
-            return
-        }
-        
-        // Skip test directories
-        if (isTestDirectory(directory)) {
-            return
-        }
-        
-        for (child in directory.children) {
-            if (child.isDirectory) {
-                processDirectory(project, child, psiManager, content, depth + 1)
-            } else {
-                processFile(project, child, psiManager, content)
+        try {
+            // Skip excluded directories
+            if (directory.name in Exclusions.EXCLUDED_DIRECTORIES && depth > 0) {
+                return
             }
+            
+            // Skip hidden directories (starting with .)
+            if (directory.name.startsWith(".") && depth > 0) {
+                return
+            }
+            
+            // Skip VCS directories
+            if (directory.name in vcsDirectories) {
+                return
+            }
+            
+            // Skip test directories
+            if (isTestDirectory(directory)) {
+                return
+            }
+            
+            for (child in directory.children) {
+                if (child.isDirectory) {
+                    processDirectory(project, child, psiManager, content, depth + 1)
+                } else {
+                    processFile(project, child, psiManager, content)
+                }
+            }
+        } catch (ex: Exception) {
+            LOG.warn("Error processing directory: ${directory.path}", ex)
         }
     }
 
@@ -112,29 +135,35 @@ class CopyProjectStructureAction : AnAction() {
         psiManager: PsiManager,
         content: StringBuilder
     ) {
-        // Skip excluded files
-        if (file.name in Exclusions.EXCLUDED_FILES) {
-            return
-        }
-        
-        // Skip binary and image files
-        val extension = file.extension?.lowercase() ?: ""
-        if (extension in Exclusions.BINARY_EXTENSIONS || 
-            extension in Exclusions.IMAGE_EXTENSIONS) {
-            return
-        }
-        
-        // Skip large files
-        if (file.length > Exclusions.MAX_FILE_SIZE_BYTES) {
-            return
-        }
-        
-        // Skip test files
-        if (isTestFile(file)) {
-            return
-        }
-        
         try {
+            // Skip excluded files
+            if (file.name in Exclusions.EXCLUDED_FILES) {
+                return
+            }
+            
+            // Skip binary and image files
+            val extension = file.extension?.lowercase() ?: ""
+            if (extension in Exclusions.BINARY_EXTENSIONS || 
+                extension in Exclusions.IMAGE_EXTENSIONS) {
+                return
+            }
+            
+            // Skip large files
+            if (file.length > Exclusions.MAX_FILE_SIZE_BYTES) {
+                return
+            }
+            
+            // Skip test files
+            if (isTestFile(file)) {
+                return
+            }
+            
+            // Skip VCS-ignored files
+            val fileStatusManager = FileStatusManager.getInstance(project)
+            if (fileStatusManager.getStatus(file) == FileStatus.IGNORED) {
+                return
+            }
+            
             val psiFile = psiManager.findFile(file) ?: return
             
             // Process based on file type
@@ -156,7 +185,7 @@ class CopyProjectStructureAction : AnAction() {
                 // Add support for other languages as needed
             }
         } catch (e: Exception) {
-            // Silently skip files that can't be processed
+            LOG.debug("Error processing file: ${file.path}", e)
         }
     }
 
