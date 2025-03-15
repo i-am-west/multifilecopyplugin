@@ -176,6 +176,54 @@ private fun extractKotlinClass(ktClass: KtClass, content: StringBuilder, indent:
 ```
 This function shows how Kotlin class structures are extracted using PSI, including class declarations, properties, and function signatures without implementation details.
 
+## Kotlin Object Extraction
+
+From `CopyProjectStructureAction.kt`:
+```kotlin
+private fun extractKotlinObject(ktObject: KtObjectDeclaration, content: StringBuilder, indent: String) {
+    // Add object declaration with modifiers
+    val modifiers = ktObject.modifierList?.text?.let { "$it " } ?: ""
+    val isCompanion = ktObject.isCompanion()
+    val objectType = if (isCompanion) "companion object" else "object"
+    val objectName = if (ktObject.name.isNullOrEmpty() && isCompanion) "" else " ${ktObject.name ?: ""}"
+    
+    content.append("$indent$modifiers$objectType$objectName")
+    
+    // Add supertype list
+    val supertypes = ktObject.superTypeListEntries
+    if (supertypes.isNotEmpty()) {
+        content.append(" : ")
+        content.append(supertypes.joinToString(", ") { it.text })
+    }
+    
+    content.append(" {\n")
+    
+    // Add properties
+    for (property in ktObject.declarations.filterIsInstance<KtProperty>()) {
+        val propModifiers = property.modifierList?.text?.let { "$it " } ?: ""
+        val type = property.typeReference?.text?.let { ": $it" } ?: ""
+        content.append("$indent    ${propModifiers}${if (property.isVar) "var" else "val"} ${property.name}$type\n")
+    }
+    
+    // Add functions
+    for (function in ktObject.declarations.filterIsInstance<KtFunction>()) {
+        if (function.name == null) continue // Skip anonymous functions
+        
+        val funcModifiers = function.modifierList?.text?.let { "$it " } ?: ""
+        val returnType = function.typeReference?.text?.let { ": $it" } ?: ""
+        
+        content.append("$indent    ${funcModifiers}fun ${function.name}(")
+        content.append(function.valueParameters.joinToString(", ") {
+            "${it.name}: ${it.typeReference?.text ?: "Any"}"
+        })
+        content.append(")$returnType\n")
+    }
+    
+    content.append("$indent}\n\n")
+}
+```
+This function shows how Kotlin object declarations are extracted, including handling companion objects, properties, and function signatures without implementation details.
+
 ## File Processing Logic
 
 From `FileProcessingUtil.kt`:

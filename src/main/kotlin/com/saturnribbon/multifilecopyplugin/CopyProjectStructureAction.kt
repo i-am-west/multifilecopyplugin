@@ -10,10 +10,7 @@ import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
 import com.saturnribbon.multifilecopyplugin.constants.Exclusions
 import com.saturnribbon.multifilecopyplugin.util.FileContentUtils
-import org.jetbrains.kotlin.psi.KtClass
-import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtFunction
-import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.*
 
 class CopyProjectStructureAction : AnAction() {
     init {
@@ -189,6 +186,7 @@ class CopyProjectStructureAction : AnAction() {
         for (declaration in ktFile.declarations) {
             when (declaration) {
                 is KtClass -> extractKotlinClass(declaration, content, "")
+                is KtObjectDeclaration -> extractKotlinObject(declaration, content, "")
                 is KtFunction -> {
                     val modifiers = declaration.modifierList?.text?.let { "$it " } ?: ""
                     val returnType = declaration.typeReference?.text ?: "Unit"
@@ -267,6 +265,55 @@ class CopyProjectStructureAction : AnAction() {
             if (nestedClass.parent == ktClass) {
                 extractKotlinClass(nestedClass, content, "$indent    ")
             }
+        }
+        
+        // Add nested objects
+        for (nestedObject in PsiTreeUtil.findChildrenOfType(ktClass, KtObjectDeclaration::class.java)) {
+            if (nestedObject.parent == ktClass) {
+                extractKotlinObject(nestedObject, content, "$indent    ")
+            }
+        }
+        
+        content.append("$indent}\n\n")
+    }
+    
+    private fun extractKotlinObject(ktObject: KtObjectDeclaration, content: StringBuilder, indent: String) {
+        // Add object declaration with modifiers
+        val modifiers = ktObject.modifierList?.text?.let { "$it " } ?: ""
+        val isCompanion = ktObject.isCompanion()
+        val objectType = if (isCompanion) "companion object" else "object"
+        val objectName = if (ktObject.name.isNullOrEmpty() && isCompanion) "" else " ${ktObject.name ?: ""}"
+        
+        content.append("$indent$modifiers$objectType$objectName")
+        
+        // Add supertype list
+        val supertypes = ktObject.superTypeListEntries
+        if (supertypes.isNotEmpty()) {
+            content.append(" : ")
+            content.append(supertypes.joinToString(", ") { it.text })
+        }
+        
+        content.append(" {\n")
+        
+        // Add properties - fixed to use declarations.filterIsInstance
+        for (property in ktObject.declarations.filterIsInstance<KtProperty>()) {
+            val propModifiers = property.modifierList?.text?.let { "$it " } ?: ""
+            val type = property.typeReference?.text?.let { ": $it" } ?: ""
+            content.append("$indent    ${propModifiers}${if (property.isVar) "var" else "val"} ${property.name}$type\n")
+        }
+        
+        // Add functions
+        for (function in ktObject.declarations.filterIsInstance<KtFunction>()) {
+            if (function.name == null) continue // Skip anonymous functions
+            
+            val funcModifiers = function.modifierList?.text?.let { "$it " } ?: ""
+            val returnType = function.typeReference?.text?.let { ": $it" } ?: ""
+            
+            content.append("$indent    ${funcModifiers}fun ${function.name}(")
+            content.append(function.valueParameters.joinToString(", ") {
+                "${it.name}: ${it.typeReference?.text ?: "Any"}"
+            })
+            content.append(")$returnType\n")
         }
         
         content.append("$indent}\n\n")
