@@ -69,7 +69,7 @@ The Multi-File Copy Plugin is an IntelliJ IDEA plugin designed to make it easy f
    - Skipping Module, Component, Config, and Configuration classes
    - Removing redundant modifiers (e.g., "public" and "protected" since they're often unnecessary)
    - Simplifying type declarations (e.g., "String" instead of "public static final String")
-   - Removing both "override" and "fun" keywords from Kotlin methods (e.g., "update(e: AnActionEvent)" instead of "override fun update(e: AnActionEvent)")
+   - Removing both "override" and "fun" keywords from Kotlin methods
    - Skipping empty classes and files that contain no public API members
    - Displaying only relative file paths instead of absolute paths
    - Omitting package declarations from file content

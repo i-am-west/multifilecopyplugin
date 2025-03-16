@@ -8,6 +8,8 @@ This document outlines potential improvements and new features that could be add
 - **Configurable Exclusions**: Allow users to customize which file types and directories are excluded
 - **Max File Size Setting**: Let users adjust the maximum file size limit
 - **Format Customization**: Provide options for how file content is formatted (headers, separators, etc.)
+- **Keyboard Shortcuts**: Allow users to customize keyboard shortcuts
+- **Default Settings**: Allow users to set default behavior for each copy action
 
 ### Project Structure Feature Enhancements
 - **Language Support**: Add support for more programming languages (Python, JavaScript, TypeScript, etc.)
@@ -17,6 +19,7 @@ This document outlines potential improvements and new features that could be add
 - **Dependency Visualization**: Include information about dependencies between classes
 - **Background Processing**: Process large projects in a background task with progress indicator
 - **Structure Preview**: Show a preview of the structure before copying to clipboard
+- **Smart Token Reduction**: Enhanced algorithms for reducing token count while preserving meaning
 
 ### Additional Features
 - **Copy with Syntax Highlighting**: Include syntax highlighting in the copied content for better readability
@@ -26,18 +29,23 @@ This document outlines potential improvements and new features that could be add
 - **Selective Copy**: Allow users to select specific parts of files to copy
 - **Copy with Git Diff**: Include Git diff information for modified files
 - **Copy to File**: Option to save the copied content to a file instead of clipboard
+- **Copy History**: Maintain a history of recent copy operations with the ability to recall them
 
 ### UI Improvements
 - **Progress Indicator**: Show progress when copying large files or many files
 - **Preview Dialog**: Show a preview of what will be copied before copying to clipboard
 - **Recently Copied Files**: Keep track of recently copied files for quick access
 - **Favorites**: Allow users to save groups of files as favorites for quick copying
+- **Custom Templates**: Allow users to create and save custom copy templates
+- **Dark Mode Support**: Ensure all UI elements respect the IDE's theme
 
 ### Integration Enhancements
 - **AI Assistant Integration**: Direct integration with AI coding assistants
 - **Version Control Integration**: Better integration with Git and other VCS
 - **Issue Tracker Integration**: Copy files with links to issue tracker
 - **Team Collaboration**: Share copied content directly with team members
+- **Cloud Storage**: Option to save copied content to cloud storage services
+- **IDE Integration**: Support for other JetBrains IDEs
 
 ## Technical Improvements
 
@@ -46,18 +54,27 @@ This document outlines potential improvements and new features that could be add
 - **Caching**: Cache file content for frequently copied files
 - **Streaming**: Stream large files instead of loading them entirely into memory
 - **PSI Optimization**: Optimize PSI tree traversal for large projects
+- **Memory Management**: Improve memory usage for large files and projects
 
 ### Code Quality
 - **Unit Tests**: Add comprehensive unit tests
 - **Integration Tests**: Add integration tests for the plugin
 - **Documentation**: Improve code documentation and add more examples
+- **Code Coverage**: Increase test coverage
+- **Static Analysis**: Add more static analysis tools
+- **Performance Metrics**: Add performance monitoring and reporting
 
 ### Compatibility
 - **IDE Support**: Ensure compatibility with all JetBrains IDEs
 - **Platform Versions**: Support older and newer platform versions
 - **OS Compatibility**: Test and ensure compatibility across all operating systems
+- **Language Support**: Expand support for more programming languages
+- **File Format Support**: Add support for more file formats
 
 ## User Experience Research
 - Conduct user surveys to identify pain points and desired features
 - Analyze usage patterns to optimize the most common workflows
-- Gather feedback on the current implementation to identify areas for improvement 
+- Gather feedback on the current implementation to identify areas for improvement
+- Monitor plugin analytics to understand feature usage
+- Create user documentation and tutorials
+- Establish a user feedback system 

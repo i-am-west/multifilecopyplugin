@@ -1,23 +1,58 @@
 # Multi-File Copy Plugin
 
-An IntelliJ IDEA plugin to select multiple files and copy their contents to the clipboard.
+An IntelliJ IDEA plugin that enhances your workflow by providing advanced file content copying capabilities. Perfect for sharing code with AI agents, team collaboration, or documentation purposes.
 
 ## Features
 
-- Copy contents of multiple selected files.
-- Each file's content is preceded by its file path.
+- **Multiple File Selection**: Copy contents of multiple selected files from the Project view
+- **Open Tabs Copy**: Copy contents of all currently open editor tabs
+- **Project Structure Copy**: Extract and copy structural elements of selected files without implementation details
+- **Simplified Structure Copy**: Create token-efficient versions of code structure by omitting private members and unnecessary details
+- **Smart Filtering**: Automatically excludes binary files, large files (>1MB), and system files
+- **Path Preservation**: Each file's content is preceded by its file path for better context
+- **Keyboard Shortcuts**:
+  - Copy Selected Files: `Shift+Ctrl+Alt+C`
+  - Copy Open Tabs: `Shift+Ctrl+T`
+  - Copy Project Structure: `Shift+Ctrl+Alt+S`
+  - Copy Simplified Structure: `Shift+Ctrl+Alt+P`
 
 ## Installation
 
-1. Download the plugin ZIP from releases or build artifacts
-2. In IntelliJ IDEA, go to **File > Settings > Plugins**.
-3. Click **Install from Disk...** and select the JAR file.
-4. Restart IntelliJ IDEA.
+1. Download the plugin JAR from the [Releases](../../releases) page
+2. In IntelliJ IDEA, go to **File > Settings > Plugins**
+3. Click the gear icon (⚙️) and select **Install Plugin from Disk...**
+4. Select the downloaded JAR file
+5. Click **OK** and restart IntelliJ IDEA when prompted
 
 ## Usage
 
-1. Select the files in the Project view.
-2. Right-click and choose **Copy Multiple Files to Clipboard**.
+### Copy Selected Files
+1. Select one or more files in the Project view
+2. Right-click and choose **Copy Multiple Files to Clipboard**
+   - Or use keyboard shortcut: `Shift+Ctrl+Alt+C`
+
+### Copy Open Tabs
+1. Access via **Edit > Copy Open Tabs to Clipboard**
+   - Or use keyboard shortcut: `Shift+Ctrl+T`
+
+### Copy Project Structure
+1. Select files or directories in the Project view
+2. Right-click and choose **Copy Project Structure to Clipboard**
+   - Or use keyboard shortcut: `Shift+Ctrl+Alt+S`
+
+### Copy Simplified Structure
+1. Select files or directories in the Project view
+2. Right-click and choose **Copy Simplified Structure to Clipboard**
+   - Or use keyboard shortcut: `Shift+Ctrl+Alt+P`
+
+## Requirements
+
+- IntelliJ IDEA 2024.1 (build 241) or later
+- Java 17 or later
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
