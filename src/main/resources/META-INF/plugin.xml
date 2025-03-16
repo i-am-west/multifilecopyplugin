@@ -24,15 +24,8 @@
       <li><b>Git Diff Features:</b> Copy git diff with full context or with related method implementations</li>
     </ul>
 
-    <h2>Keyboard Shortcuts</h2>
-    <ul>
-      <li>Copy Selected Files: <code>Shift+Ctrl+Alt+C</code></li>
-      <li>Copy Open Tabs: <code>Shift+Ctrl+T</code></li>
-      <li>Copy Project Structure: <code>Shift+Ctrl+Alt+S</code></li>
-      <li>Copy Simplified Structure: <code>Shift+Ctrl+Alt+P</code></li>
-      <li>Copy Git Diff: <code>Shift+Ctrl+Alt+D</code></li>
-      <li>Copy Git Diff with Context: <code>Shift+Ctrl+Alt+M</code></li>
-    </ul>
+    <p>All actions are available through the Project View context menu, Edit menu, and Editor tab context menu.
+    You can also set up custom keyboard shortcuts through IntelliJ IDEA's Keymap settings.</p>
   ]]></description>
 
   <change-notes><![CDATA[
@@ -78,7 +71,6 @@
             description="Copies the contents of selected files to the clipboard">
       <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="CopyReference"/>
       <add-to-group group-id="ProjectViewPopupMenuModifyGroup" anchor="after" relative-to-action="CopyReference"/>
-      <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl alt C"/>
     </action>
     <action id="CopyOpenTabsContent"
         class="com.saturnribbon.multifilecopyplugin.CopyOpenTabsAction"
@@ -87,7 +79,6 @@
       <add-to-group group-id="EditMenu" anchor="after" relative-to-action="CopyReference"/>
       <add-to-group group-id="EditorTabPopupMenu" anchor="after" relative-to-action="CopyReference"/>
       <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="CopyReference"/>
-      <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl T"/>
     </action>
     <action id="CopyProjectStructureContent"
         class="com.saturnribbon.multifilecopyplugin.CopyProjectStructureAction"
@@ -95,7 +86,6 @@
         description="Copies the structure of the project (classes, methods, fields) without implementation details">
       <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="CopyMultipleFilesContent"/>
       <add-to-group group-id="MainMenu" anchor="after" relative-to-action="EditMenu"/>
-      <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl alt S"/>
     </action>
     <action id="CopySimplifiedStructureContent"
         class="com.saturnribbon.multifilecopyplugin.CopySimplifiedStructureAction"
@@ -103,7 +93,6 @@
         description="Copies a simplified structure of the project (public API only) without implementation details">
       <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="CopyProjectStructureContent"/>
       <add-to-group group-id="MainMenu" anchor="after" relative-to-action="EditMenu"/>
-      <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl alt P"/>
     </action>
     <action id="CopyFileTreeContent"
         class="com.saturnribbon.multifilecopyplugin.CopyFileTreeAction"
@@ -111,7 +100,6 @@
         description="Copy the directory and file tree structure">
       <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="CopyReference"/>
       <add-to-group group-id="ProjectViewPopupMenuModifyGroup" anchor="after" relative-to-action="CopyReference"/>
-      <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl alt T"/>
     </action>
     <action id="CopyGitDiffContent"
         class="com.saturnribbon.multifilecopyplugin.CopyGitDiffAction"
@@ -119,7 +107,6 @@
         description="Copies the git diff between the current branch and master to the clipboard">
       <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="CopyFileTreeContent"/>
       <add-to-group group-id="MainMenu" anchor="after" relative-to-action="EditMenu"/>
-      <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl alt D"/>
     </action>
     <action id="CopyGitDiffWithContextContent"
         class="com.saturnribbon.multifilecopyplugin.CopyGitDiffWithContextAction"
@@ -127,7 +114,6 @@
         description="Copies git diff with context of methods called in modified lines">
       <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="CopyGitDiffContent"/>
       <add-to-group group-id="MainMenu" anchor="after" relative-to-action="EditMenu"/>
-      <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl alt M"/>
     </action>
   </actions>
 </idea-plugin>
