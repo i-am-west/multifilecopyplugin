@@ -89,6 +89,10 @@ jobs:
           
       - name: Update to Next SNAPSHOT Version
         run: |
+          # Check out the main branch
+          git fetch origin
+          git checkout master
+          
           # Update version in build.gradle.kts
           sed -i "s/version = \".*\"/version = \"$NEXT_VERSION\"/" build.gradle.kts
           
@@ -98,9 +102,3 @@ jobs:
           # Commit the changes
           git add build.gradle.kts src/main/resources/META-INF/plugin.xml
           git commit -m "Bump version to $NEXT_VERSION [skip ci]"
-          
-      - name: Push Changes
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }} 
