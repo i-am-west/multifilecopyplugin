@@ -1,0 +1,9 @@
+---
+description: Commit message best practices
+globs: 
+alwaysApply: false
+---
+
+# Commit message best practices
+
+- Commit message aren't meant to be flowery, keep it simple and brief

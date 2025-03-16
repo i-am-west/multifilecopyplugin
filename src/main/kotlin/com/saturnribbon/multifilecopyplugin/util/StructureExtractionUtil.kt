@@ -251,7 +251,8 @@ object StructureExtractionUtil {
         
         // For simplified structure, remove redundant modifiers
         val simplifiedModifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-            modifiers.replace("public ", "").replace("protected ", "")
+            // Remove public and protected modifiers completely for simplified structure
+            ""
         } else {
             modifiers
         }
@@ -281,6 +282,7 @@ object StructureExtractionUtil {
             }
             
             val fieldModifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
+                // Remove public and protected modifiers completely for simplified structure
                 field.modifierList?.text?.replace("public ", "")?.replace("protected ", "") ?: ""
             } else {
                 field.modifierList?.text ?: ""
@@ -297,13 +299,28 @@ object StructureExtractionUtil {
                 continue
             }
             
+            // Extract REST annotations if in simplified structure
+            val restAnnotations = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
+                val annotations = method.modifierList.annotations
+                annotations.filter { 
+                    val name = it.qualifiedName?.substringAfterLast('.') ?: ""
+                    name in listOf("GET", "POST", "PUT", "DELETE")
+                }.joinToString(" ") { "@${it.qualifiedName?.substringAfterLast('.')}" }
+            } else {
+                ""
+            }
+            
             val methodModifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-                method.modifierList.text.replace("public ", "").replace("protected ", "")
+                // Remove public and protected modifiers completely for simplified structure
+                ""
             } else {
                 method.modifierList.text
             }
             
-            content.append("$indent    $methodModifiers ${method.returnType?.presentableText ?: "void"} ${method.name}(")
+            // Add REST annotations on the same line as the method
+            val restAnnotationPrefix = if (restAnnotations.isNotEmpty()) "$restAnnotations " else ""
+            
+            content.append("$indent    $methodModifiers $restAnnotationPrefix${method.returnType?.presentableText ?: "void"} ${method.name}(")
             // Add parameters
             content.append(method.parameterList.parameters.joinToString(", ") { 
                 "${it.type.presentableText} ${it.name}" 
@@ -370,14 +387,15 @@ object StructureExtractionUtil {
                         continue
                     }
                     
-                    val modifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-                        declaration.modifierList?.text?.replace("public ", "")?.replace("protected ", "") ?: ""
+                    val propModifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
+                        // Keep val/var but remove public/protected
+                        if (declaration.isVar) "var" else "val"
                     } else {
                         declaration.modifierList?.text?.let { "$it " } ?: ""
                     }
                     
                     val type = declaration.typeReference?.text?.let { ": $it" } ?: ""
-                    content.append("${modifiers}${if (declaration.isVar) "var" else "val"} ${declaration.name}$type\n")
+                    content.append("${if (propModifiers.isNotEmpty()) "$propModifiers " else ""}${declaration.name}$type\n")
                     hasContent = true
                 }
                 is KtFunction -> {
@@ -387,8 +405,20 @@ object StructureExtractionUtil {
                         continue
                     }
                     
-                    val modifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-                        // Remove override and fun keywords in simplified structure
+                    // Extract REST annotations if in simplified structure
+                    val restAnnotations = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
+                        declaration.annotationEntries
+                            .filter { 
+                                val name = it.shortName?.asString() ?: ""
+                                name in listOf("GET", "POST", "PUT", "DELETE")
+                            }
+                            .joinToString(" ") { "@${it.shortName}" }
+                    } else {
+                        ""
+                    }
+                    
+                    val funcModifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
+                        // Remove all modifiers in simplified structure
                         ""
                     } else {
                         declaration.modifierList?.text?.let { "$it " } ?: ""
@@ -397,7 +427,10 @@ object StructureExtractionUtil {
                     val funKeyword = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) "" else "fun "
                     val returnType = declaration.typeReference?.text?.let { ": $it" } ?: ""
                     
-                    content.append("$modifiers${funKeyword}${declaration.name}(")
+                    // Add REST annotations on the same line as the method
+                    val restAnnotationPrefix = if (restAnnotations.isNotEmpty()) "$restAnnotations " else ""
+                    
+                    content.append("${funcModifiers}${funKeyword}$restAnnotationPrefix${declaration.name}(")
                     content.append(declaration.valueParameters.joinToString(", ") {
                         "${it.name}: ${it.typeReference?.text ?: "Any"}"
                     })
@@ -422,8 +455,8 @@ object StructureExtractionUtil {
         
         // Add class declaration with modifiers
         val modifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-            // Remove public and protected modifiers in simplified structure
-            ktClass.modifierList?.text?.replace("public ", "")?.replace("protected ", "")?.let { "$it " } ?: ""
+            // Remove public and protected modifiers completely in simplified structure
+            ""
         } else {
             ktClass.modifierList?.text?.let { "$it " } ?: ""
         }
@@ -443,7 +476,13 @@ object StructureExtractionUtil {
             content.append("(")
             content.append(constructor.valueParameters.joinToString(", ") {
                 val paramModifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-                    it.modifierList?.text?.replace("public ", "")?.replace("protected ", "")?.let { mods -> "$mods " } ?: ""
+                    // Keep val/var but remove public/protected
+                    val text = it.modifierList?.text ?: ""
+                    if (text.contains("val") || text.contains("var")) {
+                        text.replace("public ", "").replace("protected ", "")
+                    } else {
+                        ""
+                    }
                 } else {
                     it.modifierList?.text?.let { mods -> "$mods " } ?: ""
                 }
@@ -473,13 +512,14 @@ object StructureExtractionUtil {
             }
             
             val propModifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-                property.modifierList?.text?.replace("public ", "")?.replace("protected ", "")?.let { "$it " } ?: ""
+                // Keep val/var but remove public/protected
+                if (property.isVar) "var" else "val"
             } else {
                 property.modifierList?.text?.let { "$it " } ?: ""
             }
             
             val type = property.typeReference?.text?.let { ": $it" } ?: ""
-            content.append("$indent    ${propModifiers}${if (property.isVar) "var" else "val"} ${property.name}$type\n")
+            content.append("$indent    ${if (propModifiers.isNotEmpty()) "$propModifiers " else ""}${property.name}$type\n")
             hasContent = true
         }
         
@@ -493,8 +533,20 @@ object StructureExtractionUtil {
                 continue
             }
             
+            // Extract REST annotations if in simplified structure
+            val restAnnotations = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
+                function.annotationEntries
+                    .filter { 
+                        val name = it.shortName?.asString() ?: ""
+                        name in listOf("GET", "POST", "PUT", "DELETE")
+                    }
+                    .joinToString(" ") { "@${it.shortName}" }
+            } else {
+                ""
+            }
+            
             val funcModifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-                // Remove override and fun keywords in simplified structure
+                // Remove all modifiers in simplified structure
                 ""
             } else {
                 function.modifierList?.text?.let { "$it " } ?: ""
@@ -503,7 +555,10 @@ object StructureExtractionUtil {
             val funKeyword = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) "" else "fun "
             val returnType = function.typeReference?.text?.let { ": $it" } ?: ""
             
-            content.append("$indent    ${funcModifiers}${funKeyword}${function.name}(")
+            // Add REST annotations on the same line as the method
+            val restAnnotationPrefix = if (restAnnotations.isNotEmpty()) "$restAnnotations " else ""
+            
+            content.append("$indent    ${funcModifiers}${funKeyword}$restAnnotationPrefix${function.name}(")
             content.append(function.valueParameters.joinToString(", ") {
                 "${it.name}: ${it.typeReference?.text ?: "Any"}"
             })
@@ -528,7 +583,8 @@ object StructureExtractionUtil {
         
         // Add object declaration with modifiers
         val modifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-            ktObject.modifierList?.text?.replace("public ", "")?.replace("protected ", "")?.let { "$it " } ?: ""
+            // Remove public and protected modifiers completely in simplified structure
+            ""
         } else {
             ktObject.modifierList?.text?.let { "$it " } ?: ""
         }
@@ -560,13 +616,14 @@ object StructureExtractionUtil {
             }
             
             val propModifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-                property.modifierList?.text?.replace("public ", "")?.replace("protected ", "")?.let { "$it " } ?: ""
+                // Keep val/var but remove public/protected
+                if (property.isVar) "var" else "val"
             } else {
                 property.modifierList?.text?.let { "$it " } ?: ""
             }
             
             val type = property.typeReference?.text?.let { ": $it" } ?: ""
-            content.append("$indent    ${propModifiers}${if (property.isVar) "var" else "val"} ${property.name}$type\n")
+            content.append("$indent    ${if (propModifiers.isNotEmpty()) "$propModifiers " else ""}${property.name}$type\n")
             hasContent = true
         }
         
@@ -580,8 +637,20 @@ object StructureExtractionUtil {
                 continue
             }
             
+            // Extract REST annotations if in simplified structure
+            val restAnnotations = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
+                function.annotationEntries
+                    .filter { 
+                        val name = it.shortName?.asString() ?: ""
+                        name in listOf("GET", "POST", "PUT", "DELETE")
+                    }
+                    .joinToString(" ") { "@${it.shortName}" }
+            } else {
+                ""
+            }
+            
             val funcModifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-                // Remove override and fun keywords in simplified structure
+                // Remove all modifiers in simplified structure
                 ""
             } else {
                 function.modifierList?.text?.let { "$it " } ?: ""
@@ -590,7 +659,10 @@ object StructureExtractionUtil {
             val funKeyword = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) "" else "fun "
             val returnType = function.typeReference?.text?.let { ": $it" } ?: ""
             
-            content.append("$indent    ${funcModifiers}${funKeyword}${function.name}(")
+            // Add REST annotations on the same line as the method
+            val restAnnotationPrefix = if (restAnnotations.isNotEmpty()) "$restAnnotations " else ""
+            
+            content.append("$indent    ${funcModifiers}${funKeyword}$restAnnotationPrefix${function.name}(")
             content.append(function.valueParameters.joinToString(", ") {
                 "${it.name}: ${it.typeReference?.text ?: "Any"}"
             })
