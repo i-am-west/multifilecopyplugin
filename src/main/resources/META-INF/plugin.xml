@@ -67,12 +67,13 @@
     </action>
     <action id="CopyOpenTabsContent"
         class="com.saturnribbon.multifilecopyplugin.CopyOpenTabsAction"
-        text="Copy Open Tabs to Clipboard"
-        description="Copies the contents of all open editor tabs to the clipboard">
-    <add-to-group group-id="EditMenu" anchor="after" relative-to-action="CopyReference"/>
+        text="Copy Tab Group to Clipboard"
+        description="Copies the contents of all files in the current tab group to the clipboard">
+      <add-to-group group-id="EditMenu" anchor="after" relative-to-action="CopyReference"/>
       <add-to-group group-id="EditorTabPopupMenu" anchor="after" relative-to-action="CopyReference"/>
-    <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl T"/>
-</action>
+      <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="CopyReference"/>
+      <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl T"/>
+    </action>
     <action id="CopyProjectStructureContent"
         class="com.saturnribbon.multifilecopyplugin.CopyProjectStructureAction"
         text="Copy Project Structure to Clipboard"

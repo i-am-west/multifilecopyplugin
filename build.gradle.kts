@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.saturnribbon"
-version = "1.0.0"
+version = "1.1-SNAPSHOT"
 
 repositories {
   mavenCentral()
