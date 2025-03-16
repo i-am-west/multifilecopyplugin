@@ -26,11 +26,10 @@ jobs:
       - name: Build Plugin
         run: ./gradlew clean buildPlugin
         
-      - name: Get Version
-        id: get_version
+      - name: Get Plugin Zip Name
         run: |
-          VERSION=$(grep "version = " build.gradle.kts | cut -d'"' -f2)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          cd build/distributions
+          echo "DIST_ZIP=$(ls *.zip)" >> $GITHUB_ENV
         
       - name: Get Release
         id: get_release
@@ -44,6 +43,6 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: ./build/distributions/multifilecopyplugin-${{ env.VERSION }}.jar
-          asset_name: multifilecopyplugin-${{ github.event.release.tag_name }}.jar
-          asset_content_type: application/java-archive 
+          asset_path: ./build/distributions/${{ env.DIST_ZIP }}
+          asset_name: ${{ env.DIST_ZIP }}
+          asset_content_type: application/zip 
