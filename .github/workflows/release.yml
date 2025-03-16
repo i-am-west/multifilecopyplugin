@@ -20,8 +20,11 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         
+      - name: Grant Execute Permission for Gradle Wrapper
+        run: chmod +x gradlew
+        
       - name: Build Plugin
-        run: ./gradlew clean build
+        run: ./gradlew clean buildPlugin
         
       - name: Get Version
         id: get_version
