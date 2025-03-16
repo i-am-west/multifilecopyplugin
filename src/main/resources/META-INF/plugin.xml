@@ -90,5 +90,13 @@
       <add-to-group group-id="MainMenu" anchor="after" relative-to-action="EditMenu"/>
       <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl alt P"/>
     </action>
+    <action id="CopyFileTreeContent"
+        class="com.saturnribbon.multifilecopyplugin.CopyFileTreeAction"
+        text="Copy File Tree"
+        description="Copy the directory and file tree structure">
+      <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="CopySimplifiedStructureContent"/>
+      <add-to-group group-id="ProjectViewPopupMenuModifyGroup" anchor="after" relative-to-action="CopyReference"/>
+      <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl alt T"/>
+    </action>
   </actions>
 </idea-plugin>
