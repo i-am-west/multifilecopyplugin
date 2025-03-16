@@ -1,7 +1,7 @@
 <idea-plugin>
   <id>com.saturnribbon.multifilecopyplugin</id>
   <name>Multi-File Copy</name>
-  <version>1.3-SNAPSHOT</version>
+  <version>1.4-SNAPSHOT</version>
 
   <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
   <vendor email="multifile@saturnribbon.com" url="https://saturnribbon.com">Saturn Ribbon</vendor>
