@@ -1,6 +1,7 @@
 <idea-plugin>
   <id>com.saturnribbon.multifilecopyplugin</id>
   <name>Multi-File Copy</name>
+  <version>1.0.0</version>
 
   <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
   <vendor email="multifile@saturnribbon.com" url="https://saturnribbon.com">Saturn Ribbon</vendor>
@@ -8,9 +9,41 @@
   <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
        Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
        Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
-  <description>
-    Allows selecting multiple files in the Project view and copies their contents to the clipboard.
-  </description>
+  <description><![CDATA[
+    An IntelliJ IDEA plugin that enhances your workflow by providing advanced file content copying capabilities.
+    Perfect for sharing code with AI agents, team collaboration, or documentation purposes.
+
+    <h2>Features</h2>
+    <ul>
+      <li><b>Multiple File Selection:</b> Copy contents of multiple selected files from the Project view</li>
+      <li><b>Open Tabs Copy:</b> Copy contents of all currently open editor tabs</li>
+      <li><b>Project Structure Copy:</b> Extract and copy structural elements of selected files without implementation details</li>
+      <li><b>Simplified Structure Copy:</b> Create token-efficient versions of code structure by omitting private members</li>
+      <li><b>Smart Filtering:</b> Automatically excludes binary files, large files (>1MB), and system files</li>
+      <li><b>Path Preservation:</b> Each file's content is preceded by its file path for better context</li>
+    </ul>
+
+    <h2>Keyboard Shortcuts</h2>
+    <ul>
+      <li>Copy Selected Files: <code>Shift+Ctrl+Alt+C</code></li>
+      <li>Copy Open Tabs: <code>Shift+Ctrl+T</code></li>
+      <li>Copy Project Structure: <code>Shift+Ctrl+Alt+S</code></li>
+      <li>Copy Simplified Structure: <code>Shift+Ctrl+Alt+P</code></li>
+    </ul>
+  ]]></description>
+
+  <change-notes><![CDATA[
+    <h3>1.0.0</h3>
+    <ul>
+      <li>Initial release</li>
+      <li>Support for copying multiple selected files</li>
+      <li>Support for copying open editor tabs</li>
+      <li>Project structure extraction and copying</li>
+      <li>Simplified structure copying for token efficiency</li>
+      <li>Smart file filtering and path preservation</li>
+      <li>Keyboard shortcuts for all actions</li>
+    </ul>
+  ]]></change-notes>
 
   <depends>com.intellij.modules.platform</depends>
   <depends>com.intellij.modules.vcs</depends>
