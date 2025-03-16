@@ -23,6 +23,23 @@ jobs:
       - name: Grant Execute Permission for Gradle Wrapper
         run: chmod +x gradlew
         
+      - name: Extract Version from Release Tag
+        run: |
+          # Extract version without 'v' prefix if it exists (v1.0.0 -> 1.0.0)
+          VERSION=$(echo ${{ github.event.release.tag_name }} | sed 's/^v//')
+          echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Extracted version: $VERSION"
+          
+      - name: Update Version in build.gradle.kts
+        run: |
+          sed -i "s/version = \".*\"/version = \"$RELEASE_VERSION\"/" build.gradle.kts
+          cat build.gradle.kts | grep "version ="
+          
+      - name: Update Version in plugin.xml
+        run: |
+          sed -i "s/<version>.*<\/version>/<version>$RELEASE_VERSION<\/version>/" src/main/resources/META-INF/plugin.xml
+          cat src/main/resources/META-INF/plugin.xml | grep "<version>"
+        
       - name: Build Plugin
         run: ./gradlew clean buildPlugin
         
@@ -45,4 +62,45 @@ jobs:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: ./build/distributions/${{ env.DIST_ZIP }}
           asset_name: ${{ env.DIST_ZIP }}
-          asset_content_type: application/zip 
+          asset_content_type: application/zip
+
+      - name: Calculate Next SNAPSHOT Version
+        run: |
+          # Parse the version parts (assuming semver: major.minor.patch)
+          IFS='.' read -r -a VERSION_PARTS <<< "$RELEASE_VERSION"
+          
+          # If we have at least a major and minor version
+          if [ ${#VERSION_PARTS[@]} -ge 2 ]; then
+            # Increment the minor version
+            NEXT_MINOR=$((VERSION_PARTS[1] + 1))
+            NEXT_VERSION="${VERSION_PARTS[0]}.${NEXT_MINOR}-SNAPSHOT"
+          else
+            # Fallback in case of unconventional version format
+            NEXT_VERSION="${RELEASE_VERSION}-NEXT-SNAPSHOT"
+          fi
+          
+          echo "NEXT_VERSION=$NEXT_VERSION" >> $GITHUB_ENV
+          echo "Next development version will be: $NEXT_VERSION"
+          
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+      - name: Update to Next SNAPSHOT Version
+        run: |
+          # Update version in build.gradle.kts
+          sed -i "s/version = \".*\"/version = \"$NEXT_VERSION\"/" build.gradle.kts
+          
+          # Update version in plugin.xml
+          sed -i "s/<version>.*<\/version>/<version>$NEXT_VERSION<\/version>/" src/main/resources/META-INF/plugin.xml
+          
+          # Commit the changes
+          git add build.gradle.kts src/main/resources/META-INF/plugin.xml
+          git commit -m "Bump version to $NEXT_VERSION [skip ci]"
+          
+      - name: Push Changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }} 
