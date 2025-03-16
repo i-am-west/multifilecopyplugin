@@ -10,11 +10,9 @@ An IntelliJ IDEA plugin that enhances your workflow by providing advanced file c
 - **Simplified Structure Copy**: Create token-efficient versions of code structure by omitting private members and unnecessary details
 - **Smart Filtering**: Automatically excludes binary files, large files (>1MB), and system files
 - **Path Preservation**: Each file's content is preceded by its file path for better context
-- **Keyboard Shortcuts**:
-  - Copy Selected Files: `Shift+Ctrl+Alt+C`
-  - Copy Open Tabs: `Shift+Ctrl+T`
-  - Copy Project Structure: `Shift+Ctrl+Alt+S`
-  - Copy Simplified Structure: `Shift+Ctrl+Alt+P`
+- **Git Diff**: Copy git diff with full context between branches
+- **Git Diff with Context**: Copy git diff and automatically include implementations of methods that are called in the modified code
+- **Custom Shortcuts**: Set up your own keyboard shortcuts through IntelliJ IDEA's Keymap settings
 
 ## Installation
 
@@ -29,21 +27,30 @@ An IntelliJ IDEA plugin that enhances your workflow by providing advanced file c
 ### Copy Selected Files
 1. Select one or more files in the Project view
 2. Right-click and choose **Copy Multiple Files to Clipboard**
-   - Or use keyboard shortcut: `Shift+Ctrl+Alt+C`
 
 ### Copy Open Tabs
 1. Access via **Edit > Copy Open Tabs to Clipboard**
-   - Or use keyboard shortcut: `Shift+Ctrl+T`
 
 ### Copy Project Structure
 1. Select files or directories in the Project view
 2. Right-click and choose **Copy Project Structure to Clipboard**
-   - Or use keyboard shortcut: `Shift+Ctrl+Alt+S`
 
 ### Copy Simplified Structure
 1. Select files or directories in the Project view
 2. Right-click and choose **Copy Simplified Structure to Clipboard**
-   - Or use keyboard shortcut: `Shift+Ctrl+Alt+P`
+
+### Copy Git Diff
+1. Right-click in the Project view and choose **Copy Git Diff to Clipboard**
+
+### Copy Git Diff with Context
+1. Right-click in the Project view and choose **Copy Git Diff with Context**
+   - This feature copies the diff and adds implementation of methods called in modified code
+
+### Setting Up Custom Shortcuts
+1. Go to **File > Settings > Keymap**
+2. Search for "Copy Multiple Files" or other plugin actions
+3. Right-click on the action and select **Add Keyboard Shortcut**
+4. Press your desired key combination and click **OK**
 
 ## Requirements
 
