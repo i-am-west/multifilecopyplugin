@@ -282,13 +282,14 @@ object StructureExtractionUtil {
             }
             
             val fieldModifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-                // Remove public and protected modifiers completely for simplified structure
-                field.modifierList?.text?.replace("public ", "")?.replace("protected ", "") ?: ""
+                // Remove all annotations and modifiers except for final
+                val finalModifier = if (field.modifierList?.hasModifierProperty(PsiModifier.FINAL) == true) "final " else ""
+                finalModifier
             } else {
                 field.modifierList?.text ?: ""
             }
             
-            content.append("$indent    $fieldModifiers ${field.type.presentableText} ${field.name};\n")
+            content.append("$indent    $fieldModifiers${field.type.presentableText} ${field.name};\n")
         }
         
         // Add method signatures
@@ -311,8 +312,10 @@ object StructureExtractionUtil {
             }
             
             val methodModifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-                // Remove public and protected modifiers completely for simplified structure
-                ""
+                // Remove all modifiers except for static and final in simplified structure
+                val staticModifier = if (method.modifierList.hasModifierProperty(PsiModifier.STATIC)) "static " else ""
+                val finalModifier = if (method.modifierList.hasModifierProperty(PsiModifier.FINAL)) "final " else ""
+                staticModifier + finalModifier
             } else {
                 method.modifierList.text
             }
@@ -320,7 +323,7 @@ object StructureExtractionUtil {
             // Add REST annotations on the same line as the method
             val restAnnotationPrefix = if (restAnnotations.isNotEmpty()) "$restAnnotations " else ""
             
-            content.append("$indent    $methodModifiers $restAnnotationPrefix${method.returnType?.presentableText ?: "void"} ${method.name}(")
+            content.append("$indent    $methodModifiers$restAnnotationPrefix${method.returnType?.presentableText ?: "void"} ${method.name}(")
             // Add parameters
             content.append(method.parameterList.parameters.joinToString(", ") { 
                 "${it.type.presentableText} ${it.name}" 
@@ -388,7 +391,7 @@ object StructureExtractionUtil {
                     }
                     
                     val propModifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-                        // Keep val/var but remove public/protected
+                        // Keep only val/var and remove all other modifiers including override
                         if (declaration.isVar) "var" else "val"
                     } else {
                         declaration.modifierList?.text?.let { "$it " } ?: ""
@@ -418,7 +421,7 @@ object StructureExtractionUtil {
                     }
                     
                     val funcModifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-                        // Remove all modifiers in simplified structure
+                        // Remove all modifiers including override in simplified structure
                         ""
                     } else {
                         declaration.modifierList?.text?.let { "$it " } ?: ""
@@ -455,8 +458,17 @@ object StructureExtractionUtil {
         
         // Add class declaration with modifiers
         val modifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-            // Remove public and protected modifiers completely in simplified structure
-            ""
+            // Keep only essential modifiers for simplified structure
+            val modList = ktClass.modifierList
+            val isAbstract = modList?.hasModifier(KtTokens.ABSTRACT_KEYWORD) == true
+            val isOpen = modList?.hasModifier(KtTokens.OPEN_KEYWORD) == true
+            val isSealed = modList?.hasModifier(KtTokens.SEALED_KEYWORD) == true
+            
+            val abstractMod = if (isAbstract) "abstract " else ""
+            val openMod = if (isOpen) "open " else ""
+            val sealedMod = if (isSealed) "sealed " else ""
+            
+            abstractMod + openMod + sealedMod
         } else {
             ktClass.modifierList?.text?.let { "$it " } ?: ""
         }
@@ -476,17 +488,20 @@ object StructureExtractionUtil {
             content.append("(")
             content.append(constructor.valueParameters.joinToString(", ") {
                 val paramModifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-                    // Keep val/var but remove public/protected
+                    // Keep val/var but remove other modifiers
                     val text = it.modifierList?.text ?: ""
-                    if (text.contains("val") || text.contains("var")) {
-                        text.replace("public ", "").replace("protected ", "")
+                    if (text.contains("val")) {
+                        "val"
+                    } else if (text.contains("var")) {
+                        "var"
                     } else {
                         ""
                     }
                 } else {
                     it.modifierList?.text?.let { mods -> "$mods " } ?: ""
                 }
-                "$paramModifiers${it.name}: ${it.typeReference?.text ?: "Any"}"
+                val paramPrefix = if (paramModifiers.isNotEmpty()) "$paramModifiers " else ""
+                "$paramPrefix${it.name}: ${it.typeReference?.text ?: "Any"}"
             })
             content.append(")")
         }
@@ -512,7 +527,7 @@ object StructureExtractionUtil {
             }
             
             val propModifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-                // Keep val/var but remove public/protected
+                // Keep only val/var and remove all other modifiers including override
                 if (property.isVar) "var" else "val"
             } else {
                 property.modifierList?.text?.let { "$it " } ?: ""
@@ -546,7 +561,7 @@ object StructureExtractionUtil {
             }
             
             val funcModifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-                // Remove all modifiers in simplified structure
+                // Remove all modifiers including override in simplified structure
                 ""
             } else {
                 function.modifierList?.text?.let { "$it " } ?: ""
@@ -583,7 +598,7 @@ object StructureExtractionUtil {
         
         // Add object declaration with modifiers
         val modifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-            // Remove public and protected modifiers completely in simplified structure
+            // Remove all modifiers including override in simplified structure
             ""
         } else {
             ktObject.modifierList?.text?.let { "$it " } ?: ""
@@ -616,7 +631,7 @@ object StructureExtractionUtil {
             }
             
             val propModifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-                // Keep val/var but remove public/protected
+                // Keep only val/var and remove all other modifiers including override
                 if (property.isVar) "var" else "val"
             } else {
                 property.modifierList?.text?.let { "$it " } ?: ""
@@ -650,7 +665,7 @@ object StructureExtractionUtil {
             }
             
             val funcModifiers = if (detailLevel == DetailLevel.SIMPLIFIED_STRUCTURE) {
-                // Remove all modifiers in simplified structure
+                // Remove all modifiers including override in simplified structure
                 ""
             } else {
                 function.modifierList?.text?.let { "$it " } ?: ""
