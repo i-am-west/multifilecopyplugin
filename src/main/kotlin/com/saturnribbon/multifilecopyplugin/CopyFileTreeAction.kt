@@ -12,7 +12,25 @@ import com.saturnribbon.multifilecopyplugin.util.FileContentUtils
 
 class CopyFileTreeAction : AnAction() {
     companion object {
-        private val IGNORED_DIRECTORIES = setOf(".git")
+        private val IGNORED_DIRECTORIES = setOf(".git", ".idea")
+        
+        // File type icons
+        private fun getFileIcon(file: VirtualFile): String {
+            if (file.isDirectory) return "📁"
+            
+            return when(file.extension?.lowercase()) {
+                "kt", "kts", "java" -> "📜" // Code files
+                "md", "mdc" -> "📝" // Markdown files
+                "gradle", "properties" -> "⚙️" // Configuration files
+                "yml", "yaml" -> "⚡" // YAML files
+                "jar", "zip", "war" -> "📦" // Archive files
+                "bat", "sh", "cmd" -> "⚡" // Script files
+                "svg", "png", "jpg", "jpeg", "gif" -> "🎨" // Image files
+                "gitignore" -> "👁️" // Git files
+                null -> "📄" // No extension
+                else -> "📄" // Default file icon
+            }
+        }
     }
 
     init {
@@ -76,11 +94,8 @@ class CopyFileTreeAction : AnAction() {
             builder.append(indent)
             builder.append("- ")
             
-            if (file.isDirectory) {
-                builder.append("📁 ")
-            } else {
-                builder.append("📄 ")
-            }
+            builder.append(getFileIcon(file))
+            builder.append(" ")
             
             // Add the path or name with type information
             builder.append("`")
@@ -90,9 +105,6 @@ class CopyFileTreeAction : AnAction() {
             // Add type and metadata
             builder.append(" *(")
             builder.append(if (file.isDirectory) "directory" else "file")
-            if (!file.isDirectory) {
-                builder.append(", extension: ${file.extension ?: "none"}")
-            }
             
             // Add VCS status if not default
             val status = fileStatusManager.getStatus(file)
