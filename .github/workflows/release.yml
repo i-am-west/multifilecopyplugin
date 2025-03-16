@@ -89,9 +89,12 @@ jobs:
           
       - name: Update to Next SNAPSHOT Version
         run: |
-          # Check out the main branch
+          # Check out the master branch
           git fetch origin
           git checkout master
+          
+          # Discard changes in gradlew to avoid commit errors
+          git checkout -- gradlew
           
           # Update version in build.gradle.kts
           sed -i "s/version = \".*\"/version = \"$NEXT_VERSION\"/" build.gradle.kts
