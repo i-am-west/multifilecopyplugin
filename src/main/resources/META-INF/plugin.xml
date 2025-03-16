@@ -112,5 +112,12 @@
       <add-to-group group-id="MainMenu" anchor="after" relative-to-action="EditMenu"/>
       <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl alt D"/>
     </action>
+    <action id="CopyGitDiffWithContextContent"
+        class="com.saturnribbon.multifilecopyplugin.CopyGitDiffWithContextAction"
+        text="Copy Git Diff with Context"
+        description="Copies git diff with context of methods called in modified lines">
+      <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="CopyGitDiffContent"/>
+      <add-to-group group-id="MainMenu" anchor="after" relative-to-action="EditMenu"/>
+    </action>
   </actions>
 </idea-plugin>
