@@ -8,19 +8,18 @@ import com.intellij.notification.Notifications
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.LocalFileSystem
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.*
 import com.intellij.psi.JavaPsiFacade
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.PsiShortNamesCache
 import com.intellij.psi.util.PsiTreeUtil
 import com.saturnribbon.multifilecopyplugin.util.FileContentUtils
-import org.jetbrains.kotlin.idea.KotlinLanguage
 import org.jetbrains.kotlin.psi.*
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
 import java.util.regex.Pattern
+import com.intellij.openapi.diagnostic.Logger
 
 // Represents a method call with its class information
 data class MethodCallInfo(
@@ -31,6 +30,8 @@ data class MethodCallInfo(
 )
 
 class CopyGitDiffWithContextAction : AnAction("Copy Git Diff with Context", "Copies git diff with context of methods called in modified lines", null) {
+    private val LOG = Logger.getInstance(CopyGitDiffWithContextAction::class.java)
+    
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
         val basePath = project.basePath ?: return
@@ -55,9 +56,13 @@ class CopyGitDiffWithContextAction : AnAction("Copy Git Diff with Context", "Cop
             }
 
             val outputBuilder = StringBuilder()
-            val modifiedFilePaths = modifiedFiles.map { File(baseDir, it).absolutePath }.toSet()
+            val modifiedFilePaths = modifiedFiles.map { File(baseDir, it).absolutePath.normalizePath() }.toSet()
             val methodCalls = mutableListOf<MethodCallInfo>()
 
+            LOG.info("Found ${modifiedFiles.size} modified files")
+            LOG.info("Modified files (relative): ${modifiedFiles.joinToString(", ")}")
+            LOG.info("Modified files (absolute): ${modifiedFilePaths.joinToString(", ")}")
+            
             // Process each modified file with dynamic context
             for (filePath in modifiedFiles) {
                 val file = File(baseDir, filePath)
@@ -404,35 +409,62 @@ class CopyGitDiffWithContextAction : AnAction("Copy Git Diff with Context", "Cop
         val shortNamesCache = PsiShortNamesCache.getInstance(project)
         val scope = GlobalSearchScope.projectScope(project)
         
+        LOG.info("Finding method implementations. Modified file paths: ${modifiedFilePaths.joinToString(", ")}")
+        LOG.info("Total method calls to process: ${methodCalls.size}")
+        
         // Process each method call individually rather than by class
         for (methodCall in methodCalls) {
             val methodName = methodCall.methodName
             
             // Skip common methods
-            if (isCommonMethod(methodName)) continue
+            if (isCommonMethod(methodName)) {
+                LOG.info("Skipping common method: $methodName")
+                continue
+            }
+            
+            LOG.info("Processing method call: $methodName from ${methodCall.sourceFile}:${methodCall.sourceLine}, class: ${methodCall.className}")
             
             // First try using the specific class if we have one
             if (methodCall.className != null) {
                 val psiClass = findClassInProject(project, methodCall.className)
                 
                 if (psiClass != null) {
+                    val classQualifiedName = psiClass.qualifiedName ?: psiClass.name
+                    LOG.info("Found class: $classQualifiedName for method: $methodName")
+                    
                     // Skip if class's file is in the modified files
                     val classFile = psiClass.containingFile?.virtualFile
                     if (classFile != null) {
-                        val classFilePath = classFile.path
+                        val classFilePath = classFile.path.normalizePath()
+                        LOG.info("Class file path: $classFilePath")
+                        
+                        // Debug check for modified file paths
+                        val isModified = isPathInModifiedPaths(classFilePath, modifiedFilePaths)
+                        LOG.info("Is class file in modified paths? $isModified")
+                        
+                        // Log all modified paths for comparison
+                        LOG.info("All modified paths: ${modifiedFilePaths.joinToString("\n")}")
                         
                         // Only skip if the class's file is in the modified files
-                        if (modifiedFilePaths.contains(classFilePath)) {
+                        if (isModified) {
+                            LOG.info("Skipping methods from modified file: $classFilePath")
                             continue
+                        } else {
+                            LOG.info("Class file is not modified, will include its methods")
                         }
                         
                         // Add methods from this class
                         val methods = psiClass.findMethodsByName(methodName, false)
+                        LOG.info("Found ${methods.size} methods named '$methodName' in class $classQualifiedName")
                         addMethodsToResults(methods, referencedMethods, classFilePath)
                         
                         // If we found methods, continue to the next call
                         if (methods.isNotEmpty()) continue
+                    } else {
+                        LOG.info("No containing file found for class $classQualifiedName")
                     }
+                } else {
+                    LOG.info("Could not find class: ${methodCall.className} in the project")
                 }
             }
             
@@ -440,25 +472,45 @@ class CopyGitDiffWithContextAction : AnAction("Copy Git Diff with Context", "Cop
             // 1. We didn't have a class name
             // 2. We couldn't find the class
             // 3. The class didn't have the method
+            LOG.info("Falling back to search by method name: $methodName")
             
             // Try the short names cache for efficiency
             val methodsByName = shortNamesCache.getMethodsByName(methodName, scope)
+            LOG.info("Found ${methodsByName.size} methods named '$methodName' in the project")
             
             for (method in methodsByName) {
-                val containingClass = method.containingClass ?: continue
-                val containingFile = containingClass.containingFile?.virtualFile ?: continue
-                
-                // Skip libraries and modified files
-                if (!ProjectFileIndex.getInstance(project).isInContent(containingFile)) {
+                val containingClass = method.containingClass
+                if (containingClass == null) {
+                    LOG.info("Method $methodName has no containing class, skipping")
                     continue
                 }
                 
-                val containingFilePath = containingFile.path
-                if (modifiedFilePaths.contains(containingFilePath)) {
+                val containingClassQName = containingClass.qualifiedName ?: containingClass.name
+                val containingFile = containingClass.containingFile?.virtualFile
+                if (containingFile == null) {
+                    LOG.info("Method $methodName in class $containingClassQName has no containing file, skipping")
+                    continue
+                }
+                
+                // Skip libraries and modified files
+                if (!ProjectFileIndex.getInstance(project).isInContent(containingFile)) {
+                    LOG.info("Method $methodName in class $containingClassQName is from a library, skipping")
+                    continue
+                }
+                
+                val containingFilePath = containingFile.path.normalizePath()
+                LOG.info("Method $methodName in class $containingClassQName is in file: $containingFilePath")
+                
+                val isModified = isPathInModifiedPaths(containingFilePath, modifiedFilePaths)
+                LOG.info("Is method's file in modified paths? $isModified")
+                
+                if (isModified) {
+                    LOG.info("Skipping method $methodName from modified file: $containingFilePath")
                     continue
                 }
                 
                 // Add this method
+                LOG.info("Adding method $methodName from class $containingClassQName to results")
                 val methodKey = "${containingFilePath}#${method.name}#${containingClass.name}"
                 if (!referencedMethods.containsKey(methodKey)) {
                     referencedMethods[methodKey] = formatMethodReference(method, containingFilePath)
@@ -466,6 +518,7 @@ class CopyGitDiffWithContextAction : AnAction("Copy Git Diff with Context", "Cop
             }
         }
         
+        LOG.info("Total methods found: ${referencedMethods.size}")
         return referencedMethods
     }
     
@@ -477,11 +530,17 @@ class CopyGitDiffWithContextAction : AnAction("Copy Git Diff with Context", "Cop
         referencedMethods: MutableMap<String, String>,
         containingFilePath: String
     ) {
+        val normalizedPath = containingFilePath.normalizePath()
+        LOG.info("Adding ${methods.size} methods from file: $normalizedPath")
+        
         for (method in methods) {
             val containingClass = method.containingClass ?: continue
-            val methodKey = "${containingFilePath}#${method.name}#${containingClass.name}"
+            val methodKey = "${normalizedPath}#${method.name}#${containingClass.name}"
             if (!referencedMethods.containsKey(methodKey)) {
-                referencedMethods[methodKey] = formatMethodReference(method, containingFilePath)
+                LOG.info("Adding method ${method.name} from class ${containingClass.qualifiedName}")
+                referencedMethods[methodKey] = formatMethodReference(method, normalizedPath)
+            } else {
+                LOG.info("Method ${method.name} from class ${containingClass.qualifiedName} already in results, skipping")
             }
         }
     }
@@ -566,5 +625,52 @@ class CopyGitDiffWithContextAction : AnAction("Copy Git Diff with Context", "Cop
         }
         
         return builder.toString()
+    }
+
+    /**
+     * Normalizes a file path for consistent comparison
+     */
+    private fun String.normalizePath(): String {
+        return this.replace('\\', '/').replace("//", "/")
+    }
+    
+    /**
+     * Checks if a path is in the set of modified paths using a more robust comparison
+     */
+    private fun isPathInModifiedPaths(path: String, modifiedPaths: Set<String>): Boolean {
+        val normalizedPath = path.normalizePath()
+        
+        // Direct check
+        if (modifiedPaths.contains(normalizedPath)) {
+            LOG.info("Path match found (direct): $normalizedPath")
+            return true
+        }
+        
+        // Check for paths with different base directories but same filename
+        val pathFile = File(normalizedPath)
+        val pathFileName = pathFile.name
+        
+        for (modifiedPath in modifiedPaths) {
+            val modifiedFile = File(modifiedPath)
+            
+            // Compare file names
+            if (modifiedFile.name == pathFileName) {
+                LOG.info("Path match found (filename): $normalizedPath matches $modifiedPath")
+                
+                // Try to compare relative paths from project root
+                val pathParts = normalizedPath.split("/")
+                val modifiedParts = modifiedPath.split("/")
+                
+                // Check if at least last two path segments match (filename + parent dir)
+                if (pathParts.size >= 2 && modifiedParts.size >= 2 && 
+                    pathParts[pathParts.size - 1] == modifiedParts[modifiedParts.size - 1] &&
+                    pathParts[pathParts.size - 2] == modifiedParts[modifiedParts.size - 2]) {
+                    LOG.info("Path match found (last segments): $normalizedPath matches $modifiedPath")
+                    return true
+                }
+            }
+        }
+        
+        return false
     }
 }
