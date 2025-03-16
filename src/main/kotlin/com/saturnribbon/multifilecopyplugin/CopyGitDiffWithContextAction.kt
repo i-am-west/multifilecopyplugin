@@ -15,11 +15,11 @@ import com.intellij.psi.search.PsiShortNamesCache
 import com.intellij.psi.util.PsiTreeUtil
 import com.saturnribbon.multifilecopyplugin.util.FileContentUtils
 import org.jetbrains.kotlin.psi.*
-import java.io.BufferedReader
 import java.io.File
-import java.io.InputStreamReader
 import java.util.regex.Pattern
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.actionSystem.ActionUpdateThread
+import com.saturnribbon.multifilecopyplugin.util.GitDiffUtils
 
 // Represents a method call with its class information
 data class MethodCallInfo(
@@ -29,8 +29,28 @@ data class MethodCallInfo(
     val sourceLine: Int
 )
 
-class CopyGitDiffWithContextAction : AnAction("Copy Git Diff with Context", "Copies git diff with context of methods called in modified lines", null) {
-    private val LOG = Logger.getInstance(CopyGitDiffWithContextAction::class.java)
+class CopyGitDiffWithContextAction : AnAction() {
+    companion object {
+        private val LOG = Logger.getInstance(CopyGitDiffWithContextAction::class.java)
+        
+        // Common methods that should be ignored when analyzing method calls
+        private val COMMON_METHODS = setOf(
+            "equals", "hashCode", "toString", "valueOf", "values",
+            "get", "set", "add", "remove", "contains", "size", "isEmpty",
+            "println", "print"
+        )
+        
+        // Pattern for parsing git diff hunk headers
+        private val HUNK_HEADER_PATTERN = Pattern.compile("^@@ -(\\d+),\\d+ \\+(\\d+),\\d+ @@.*$", Pattern.MULTILINE)
+    }
+    
+    override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.EDT
+    
+    override fun update(e: AnActionEvent) {
+        super.update(e)
+        e.presentation.text = "Copy Git Diff with Context"
+        e.presentation.description = "Copies git diff with context of methods called in modified lines"
+    }
     
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
@@ -38,18 +58,11 @@ class CopyGitDiffWithContextAction : AnAction("Copy Git Diff with Context", "Cop
         val baseDir = File(basePath)
 
         try {
-            // Get list of modified files between the current branch and master
-            val modifiedFilesProcess = ProcessBuilder("git", "diff", "--name-only", "master")
-                .directory(baseDir)
-                .redirectErrorStream(true)
-                .start()
-            val modifiedFilesReader = BufferedReader(InputStreamReader(modifiedFilesProcess.inputStream))
-            val modifiedFiles = modifiedFilesReader.readLines().filter { it.isNotBlank() }
-            modifiedFilesProcess.waitFor()
+            val modifiedFiles = GitDiffUtils.getModifiedFiles(baseDir)
 
             if (modifiedFiles.isEmpty()) {
                 Notifications.Bus.notify(
-                    Notification("GitDiff", "Copy Git Diff with Context", "No modified files found between the current branch and master.", NotificationType.INFORMATION),
+                    Notification("FileProcessingUtil", "Copy Git Diff with Context", "No modified files found between the current branch and master.", NotificationType.INFORMATION),
                     project
                 )
                 return
@@ -66,33 +79,8 @@ class CopyGitDiffWithContextAction : AnAction("Copy Git Diff with Context", "Cop
             // Process each modified file with dynamic context
             for (filePath in modifiedFiles) {
                 val file = File(baseDir, filePath)
-                
-                // Determine context size based on file existence
-                val contextParam = if (file.exists()) {
-                    // Count lines in the file using Java/Kotlin (cross-platform)
-                    val lineCount = try {
-                        file.bufferedReader().use { reader ->
-                            reader.lines().count().toInt()
-                        }
-                    } catch (e: Exception) {
-                        // Default to 1000 if we can't count lines
-                        1000
-                    }
-                    lineCount.toString()
-                } else {
-                    // For deleted files, use a large fixed context
-                    "1000"
-                }
-                
-                // Get diff with appropriate context
-                val fileDiffProcess = ProcessBuilder("git", "diff", "master", "-U$contextParam", "--", filePath)
-                    .directory(baseDir)
-                    .redirectErrorStream(true)
-                    .start()
-                val fileDiffReader = BufferedReader(InputStreamReader(fileDiffProcess.inputStream))
-                val diffOutput = fileDiffReader.readText()
-                fileDiffProcess.waitFor()
-                
+                val diffOutput = GitDiffUtils.getDiff(file, baseDir, filePath)
+
                 if (diffOutput.isNotBlank()) {
                     outputBuilder.append(diffOutput)
                     outputBuilder.append("\n\n")
@@ -111,7 +99,7 @@ class CopyGitDiffWithContextAction : AnAction("Copy Git Diff with Context", "Cop
             
             if (diffOutput.isBlank()) {
                 Notifications.Bus.notify(
-                    Notification("GitDiff", "Copy Git Diff with Context", "No differences found.", NotificationType.INFORMATION),
+                    Notification("FileProcessingUtil", "Copy Git Diff with Context", "No differences found.", NotificationType.INFORMATION),
                     project
                 )
                 return
@@ -125,23 +113,22 @@ class CopyGitDiffWithContextAction : AnAction("Copy Git Diff with Context", "Cop
             
             FileContentUtils.copyToClipboard(finalOutput)
             Notifications.Bus.notify(
-                Notification("GitDiff", "Copy Git Diff with Context", "Git diff with method context copied to clipboard.", NotificationType.INFORMATION),
+                Notification("FileProcessingUtil", "Copy Git Diff with Context", "Git diff with method context copied to clipboard.", NotificationType.INFORMATION),
                 project
             )
         } catch (ex: Exception) {
             Notifications.Bus.notify(
-                Notification("GitDiff", "Copy Git Diff with Context", "Error occurred: ${ex.message}", NotificationType.ERROR),
+                Notification("FileProcessingUtil", "Copy Git Diff with Context", "Error occurred: ${ex.message}", NotificationType.ERROR),
                 project
             )
         }
     }
-    
+
     /**
      * Extracts the line numbers of modified lines from diff output
      */
     private fun extractModifiedLineNumbers(diffOutput: String): Map<Int, String> {
         val modifiedLines = mutableMapOf<Int, String>()
-        val linePattern = Pattern.compile("^@@ -(\\d+),\\d+ \\+(\\d+),\\d+ @@.*$", Pattern.MULTILINE)
         
         var currentLine = 0
         
@@ -153,7 +140,7 @@ class CopyGitDiffWithContextAction : AnAction("Copy Git Diff with Context", "Cop
             
             if (line.startsWith("@@")) {
                 // Parse hunk header
-                val matcher = linePattern.matcher(line)
+                val matcher = HUNK_HEADER_PATTERN.matcher(line)
                 if (matcher.matches()) {
                     currentLine = matcher.group(2).toInt()
                 }
@@ -384,13 +371,7 @@ class CopyGitDiffWithContextAction : AnAction("Copy Git Diff with Context", "Cop
      * Checks if a method name is a common method to be ignored
      */
     private fun isCommonMethod(methodName: String): Boolean {
-        val commonMethods = setOf(
-            "equals", "hashCode", "toString", "valueOf", "values",
-            "get", "set", "add", "remove", "contains", "size", "isEmpty",
-            "println", "print"
-        )
-        
-        return commonMethods.contains(methodName) || 
+        return COMMON_METHODS.contains(methodName) || 
                methodName.startsWith("get") || 
                methodName.startsWith("set") || 
                methodName.startsWith("is") ||
