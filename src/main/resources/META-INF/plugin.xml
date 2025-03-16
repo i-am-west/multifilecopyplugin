@@ -100,9 +100,17 @@
         class="com.saturnribbon.multifilecopyplugin.CopyFileTreeAction"
         text="Copy File Tree"
         description="Copy the directory and file tree structure">
-      <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="CopySimplifiedStructureContent"/>
+      <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="CopyReference"/>
       <add-to-group group-id="ProjectViewPopupMenuModifyGroup" anchor="after" relative-to-action="CopyReference"/>
       <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl alt T"/>
+    </action>
+    <action id="CopyGitDiffContent"
+        class="com.saturnribbon.multifilecopyplugin.CopyGitDiffAction"
+        text="Copy Git Diff to Clipboard"
+        description="Copies the git diff between the current branch and master to the clipboard">
+      <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="CopyFileTreeContent"/>
+      <add-to-group group-id="MainMenu" anchor="after" relative-to-action="EditMenu"/>
+      <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl alt D"/>
     </action>
   </actions>
 </idea-plugin>
